@@ -91,7 +91,29 @@ def makeSubtree(data):
     return 0
 
 
+def computeEntropy_binary(p):
+    entropy = -p * np.log(p) - (1 - p) * np.log(1 - p)
+    return entropy
 
+def entropy(classLabels, classRange):
+    # assume the class range has cardinality 2
+    n_total = len(classLabels)
+    count = 0
+    count_ = 0
+    for label in classLabels:
+        if label == classRange[0]:
+            count+=1
+        else:
+            count_+=1
+
+    if (count + count_) != n_total:
+        sys.exit('ERROR')
+
+    # MLE for p
+    p = 1.0 * count / n_total
+    # compute entropy
+    entropy = computeEntropy_binary(p)
+    return entropy
 
 ###################### END OF DEFINITIONS OF HELPER FUNCTIONS ##########################
 
@@ -111,6 +133,7 @@ printAllFeatures(metadata, feature_vals)
 node = decisionTreeNode()
 
 
+print feature_vals[-1]
 
 
 # # read each instance
@@ -119,7 +142,6 @@ node = decisionTreeNode()
 #     for i in xrange(len(instance)):
 #         feature_i = instance[i]
 #         print "%s \t %s" % (metadata.types().pop(i), feature_i)
-#
 #     sys.exit('STOP')
-#
-#
+
+
