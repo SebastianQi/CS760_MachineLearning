@@ -1,6 +1,8 @@
 import numpy as np
 import scipy.io.arff as sp
 import sys
+import arff
+
 
 from decisionTreeNode import decisionTreeNode
 from util import *
@@ -17,35 +19,30 @@ def processInputArgs():
     return fname_train, fname_test, m
 
 
-def getFeatureRange(fname_train):
-    feature_range = []
-    feature_idx = 0
-    for line in open(fname_train):
-        if line.strip().startswith(ATTRIBUTE_INDICATOR):
-            # read the line
-            range_str = line.rstrip().split(' ')
-            # pop out line header and feature name
-            range_str.pop(0);range_str.pop(0)
-            # check if the feature is continuous or discrete
-            if isContinuous(range_str[0]):
-                feature_range.append(TYPE_NUMERIC)
+def getFeatureVals(data, metadata):
+    feature_vals = []
+    # read each instance
+    for i in range(len(metadata.types())):
+        vals = []
+        for instance in data:
+            # append the ith feature value of the current instance
+            vals.append(instance[i])
+            if isContinuous(metadata.types()[i]):
+                # sort continuous valued list
+                vals = sorted(vals)
             else:
-                # remove the two brakets
-                range_str.pop(0)
-                range_str[-1] = range_str[-1][:-1]
-                # remove commas
-                for i in range(len(range_str)):
-                    range_str[i] = range_str[i].strip(',')
-                # append the feature values
-                feature_range.append(range_str)
-        feature_idx +=1
-    return feature_range
+                # find unique values for nominal data
+                vals = list(set(vals))
+        feature_vals.append(vals)
+    return feature_vals
+
+
 
 def loadData(fname_data):
     # read the training data
     data, metadata = sp.loadarff(fname_data)
     # read the possible values for each feature
-    feature_vals = getFeatureRange(fname_data)
+    feature_vals = getFeatureVals(data, metadata)
     return data, metadata, feature_vals
 
 # verify: for all features, all feature values IN feature_range (read from the data)
@@ -60,8 +57,12 @@ def dataChecker(data):
 
 def printAllFeatures(metadata, feature_vals):
     for i in range(len(feature_vals)):
+        if isContinuous(metadata.types()[i]):
+            featurevalues = "[......]"
+        else:
+            featurevalues = str(feature_vals[i])
         print "%d\t%8s\t%s\t%s " % \
-              (i, metadata.names()[i], metadata.types()[i], str(feature_vals[i]))
+              (i, metadata.names()[i], metadata.types()[i], featurevalues)
 
 ###################### DT Functions ##########################
 
@@ -98,16 +99,17 @@ def makeSubtree(data):
 fname_train, fname_test, m = processInputArgs()
 # load data
 data_train, metadata, feature_vals = loadData(fname_train)
-# data_test, _, _ = loadData(fname_test)
-# nTest = len(data_test)
 
 # read some parameters
 nTrain = len(data_train)
 nFeature = len(metadata.types())
 
+# test
+printAllFeatures(metadata, feature_vals)
+
+# start creating the tree
 node = decisionTreeNode()
 
-printAllFeatures(metadata, feature_vals)
 
 
 
@@ -119,5 +121,5 @@ printAllFeatures(metadata, feature_vals)
 #         print "%s \t %s" % (metadata.types().pop(i), feature_i)
 #
 #     sys.exit('STOP')
-
-
+#
+#
