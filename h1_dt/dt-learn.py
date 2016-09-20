@@ -2,8 +2,9 @@ import numpy as np
 import scipy.io.arff as sp
 import sys
 
-# CONSTANT
-TYPE_NUMERIC = "numeric"
+from decisionTreeNode import decisionTreeNode
+from util import *
+
 
 def processInputArgs():
     # process input arguments
@@ -20,19 +21,19 @@ def getFeatureRange(fname_train):
     feature_range = []
     feature_idx = 0
     for line in open(fname_train):
-        if line.strip().startswith("@attribute"):
+        if line.strip().startswith(ATTRIBUTE_INDICATOR):
             # read the line
             range_str = line.rstrip().split(' ')
             # pop out line header and feature name
             range_str.pop(0);range_str.pop(0)
-
-            if range_str[0] == "real" or  range_str[0] == TYPE_NUMERIC:
+            # check if the feature is continuous or discrete
+            if isContinuous(range_str[0]):
                 feature_range.append(TYPE_NUMERIC)
             else:
                 # remove the two brakets
                 range_str.pop(0)
                 range_str[-1] = range_str[-1][:-1]
-                # remove comma
+                # remove commas
                 for i in range(len(range_str)):
                     range_str[i] = range_str[i].strip(',')
                 # append the feature values
@@ -53,7 +54,43 @@ def dataChecker(data):
     for instance in data:
         for i in xrange(len(instance)):
             if feature_vals[i] != TYPE_NUMERIC and instance[i] not in feature_vals[i]:
-                print "WTF"
+                print "ERROR: Unrecognizable Feature!"
+    return 0
+
+
+def printAllFeatures(metadata, feature_vals):
+    for i in range(len(feature_vals)):
+        print "%d\t%8s\t%s\t%s " % \
+              (i, metadata.names()[i], metadata.types()[i], str(feature_vals[i]))
+
+###################### DT Functions ##########################
+
+def determineCandidateSplits(data):
+    return 0
+
+def stoppingGrowing():
+    return 0
+
+def findBestSplit():
+    return 0
+
+def makeSubtree(data):
+    C = DetermineCandidateSplits(D)
+    if stoppingGrowing():
+        temp = 0
+        # make a leaf node N
+        # determine class label/probabilities for N
+    else:
+        # make an internal node N
+        S = findBestSplit(D, C)
+    #     for eachOutcome k of S
+    #         Dk = subset of instances that have outcome k
+    #         kth child of N = MakeSubtree(Dk)
+    # return subtree rooted at N
+    return 0
+
+
+
 
 ###################### END OF DEFINITIONS OF HELPER FUNCTIONS ##########################
 
@@ -68,14 +105,19 @@ data_train, metadata, feature_vals = loadData(fname_train)
 nTrain = len(data_train)
 nFeature = len(metadata.types())
 
+node = decisionTreeNode()
 
-# read each instance
-for instance in data_train:
-    # read each feature
-    for i in xrange(len(instance)):
-        feature_i = instance[i]
-        print "%s \t %s" % (metadata.types().pop(i), feature_i)
+printAllFeatures(metadata, feature_vals)
 
-    sys.exit('STOP')
+
+
+# # read each instance
+# for instance in data_train:
+#     # read each feature
+#     for i in xrange(len(instance)):
+#         feature_i = instance[i]
+#         print "%s \t %s" % (metadata.types().pop(i), feature_i)
+#
+#     sys.exit('STOP')
 
 
