@@ -19,50 +19,31 @@ def processInputArgs():
     return fname_train, fname_test, m
 
 
-def getFeatureVals(data, metadata):
+def getFeatureVals(_data, _metadata):
     feature_vals = []
+    columns = []
     # read each instance
-    for i in range(len(metadata.types())):
-        vals = []
-        for instance in data:
-            # append the ith feature value of the current instance
-            vals.append(instance[i])
-            if isContinuous(metadata.types()[i]):
-                # sort continuous valued list
-                vals = sorted(vals)
-            else:
-                # find unique values for nominal data
-                vals = list(set(vals))
-        feature_vals.append(vals)
-    return feature_vals
+    for i in range(len(_metadata.types())):
+        column = []
+        # append the ith feature value of the current instance
+        for instance in _data:
+            column.append(instance[i])
+        columns.append(column)
+
+        # save sorted unique values for each feature
+        feature_vals.append(sorted(list(set(column))))
+    return feature_vals, columns
 
 
 
-def loadData(fname_data):
+def loadData(_data):
     # read the training data
-    data, metadata = sp.loadarff(fname_data)
+    data, metadata = sp.loadarff(_data)
     # read the possible values for each feature
-    feature_vals = getFeatureVals(data, metadata)
-    return data, metadata, feature_vals
-
-# verify: for all features, all feature values IN feature_range (read from the data)
-# delete before submit!
-def dataChecker(data):
-    for instance in data:
-        for i in xrange(len(instance)):
-            if feature_vals[i] != TYPE_NUMERIC and instance[i] not in feature_vals[i]:
-                print "ERROR: Unrecognizable Feature!"
-    return 0
+    feature_vals, columns = getFeatureVals(data, metadata)
+    return data, metadata, feature_vals, columns
 
 
-def printAllFeatures(metadata, feature_vals):
-    for i in range(len(feature_vals)):
-        if isContinuous(metadata.types()[i]):
-            featurevalues = "[......]"
-        else:
-            featurevalues = str(feature_vals[i])
-        print "%d\t%8s\t%s\t%s " % \
-              (i, metadata.names()[i], metadata.types()[i], featurevalues)
 
 ###################### DT Functions ##########################
 
@@ -80,7 +61,7 @@ def makeSubtree(data):
     if stoppingGrowing():
         temp = 0
         # make a leaf node N
-        # determine class label/probabilities for N
+        # determine class label for N
     else:
         # make an internal node N
         S = findBestSplit(D, C)
@@ -91,36 +72,132 @@ def makeSubtree(data):
     return 0
 
 
-def computeEntropy_binary(p):
-    entropy = -p * np.log(p) - (1 - p) * np.log(1 - p)
-    return entropy
 
-def entropy(classLabels, classRange):
+def splitData_continuous(_data, _featureIdx, _threshold):
+    '''
+
+    :param _data:
+    :param _featureIdx:
+    :param _threshold: should be mean(v_i, v_i+1) for some i
+    :return:
+    '''
+    data_divided = []
+    data_sub_less = []
+    data_sub_greater = []
+    # loop over all instances
+    for instance in _data:
+        # assign to corresponding subset based on a comparison w/ a threshold
+        if instance[_featureIdx] <= _threshold:
+            data_sub_less.append(instance)
+        else:
+            data_sub_greater.append(instance)
+
+    data_divided.append(data_sub_less)
+    data_divided.append(data_sub_greater)
+    return data_divided
+
+
+
+def splitData_discrete(_data, _featureIdx, _feature_vals):
+    '''
+    Divided the data set with respect to feature F
+    :param _data:
+    :param _featureIdx:
+    :param _feature_vals:
+    :return:
+    '''
+    data_divided = []
+    # for ith feature value, F_i
+    for _feature_val in _feature_vals:
+        data_sub = []
+        # loop over all instances
+        for instance in _data:
+            # collect instances with F_i
+            if instance[_featureIdx] == _feature_val:
+                data_sub.append(instance)
+        # save the subset
+        data_divided.append(data_sub)
+    return data_divided
+
+
+def neighbourMean(nparray):
+    return np.divide(np.add(nparray[0:-1], nparray[1:]), 2.0)
+
+
+
+def computeEntropy_binary(classLabels, classRange):
     # assume the class range has cardinality 2
-    n_total = len(classLabels)
+    if not len(classRange) == 2:
+        sys.exit('ERROR: non-binary class labels.')
+
+    # count the frequency for one class
     count = 0
-    count_ = 0
     for label in classLabels:
         if label == classRange[0]:
             count+=1
-        else:
-            count_+=1
 
-    if (count + count_) != n_total:
-        sys.exit('ERROR')
+    if count == len(classLabels) or count == 0:
+        return 0
+    else:
+        # MLE for p
+        p = 1.0 * count / len(classLabels)
+        # compute entropy
+        entropy = -p * np.log2(p) - (1-p) * np.log2(1-p)
+        return entropy
 
-    # MLE for p
-    p = 1.0 * count / n_total
-    # compute entropy
-    entropy = computeEntropy_binary(p)
+
+def computeEntropy_dividedSet(_data_divded, _data_whole, _classRange):
+    entropy = 0
+    for data_sub in _data_divded:
+        classLabels = []
+        for instance in data_sub:
+            classLabels.append(instance[-1])
+
+        # weight the entropy by the occurence
+        p_x = 1.0 * len(data_sub) / len(_data_whole)
+        entropy += p_x * computeEntropy_binary(classLabels, _classRange)
     return entropy
+
+
+def computeConditionalEntropy():
+    # loop over all features
+    entropy_YgX = np.zeros((nFeature - 1, 1,))
+    for i in range(nFeature - 1):
+
+        # condition 1: numeric feature
+        if isNumeric(metadata.types()[i]):
+            allThresholds = neighbourMean(np.array(feature_vals[i]))
+            # find the threshold (split) with the lowest entropy
+            minEntropy_idx = -1
+            minEntropy = float('inf')
+            for t in range(len(allThresholds)):
+                # split the data with the t-th threshold
+                data_divded = splitData_continuous(data_train, i, allThresholds[t])
+                entropy = computeEntropy_dividedSet(data_divded, data_train, feature_vals[-1])
+                # keep track of the min entropy and its index
+                if entropy < minEntropy:
+                    minEntropy = entropy
+                    minEntropy_idx = t
+            # get the minimum
+            entropy = minEntropy
+
+        # condition 2: nominal feature
+        else:
+            # split the data with the ith feature
+            data_divded = splitData_discrete(data_train, i, feature_vals[i])
+            # accumulate entropy
+            entropy = computeEntropy_dividedSet(data_divded, data_train, feature_vals[-1])
+
+        entropy_YgX[i] = entropy
+
+    return entropy_YgX
 
 ###################### END OF DEFINITIONS OF HELPER FUNCTIONS ##########################
 
 # read input arguments
 fname_train, fname_test, m = processInputArgs()
 # load data
-data_train, metadata, feature_vals = loadData(fname_train)
+data_train, metadata, feature_vals, columns = loadData(fname_train)
 
 # read some parameters
 nTrain = len(data_train)
@@ -128,20 +205,27 @@ nFeature = len(metadata.types())
 
 # test
 printAllFeatures(metadata, feature_vals)
+print "\n"
+
+
+entropy_Y = computeEntropy_binary(columns[-1], feature_vals[-1])
+entropy_YgX = computeConditionalEntropy()
+
+
+print entropy_YgX
+
 
 # start creating the tree
-node = decisionTreeNode()
+# node = decisionTreeNode()
 
 
-print feature_vals[-1]
-
-
-# # read each instance
-# for instance in data_train:
-#     # read each feature
-#     for i in xrange(len(instance)):
-#         feature_i = instance[i]
-#         print "%s \t %s" % (metadata.types().pop(i), feature_i)
-#     sys.exit('STOP')
-
-
+# entropy_YgX = []
+# for i in range(nFeature-1):
+#     # split the training examples according to X_i
+#     temp = 0
+#     # compute the resulting entropy for X_i
+#     # compute the info gain for X_i
+#
+# # find X_i that maximize info gain
+#
+# # split on X_i

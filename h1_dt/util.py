@@ -4,16 +4,61 @@ TYPE_REAL = "real"
 TYPE_INT = "integer"
 ATTRIBUTE_INDICATOR = "@attribute"
 
+# SMALL_NUMBER = 1e-10
+
 ######################## HELPER FUNCTIONS ########################
-def isContinuous(type_str):
+def isNumeric(type_str):
     if type_str == TYPE_NUMERIC or type_str == TYPE_REAL or type_str == TYPE_INT:
         return True
     else:
         return False
 
+######################## CHECKER FUNCTIONS ########################
+
+# verify: for all features, all feature values IN feature_range (read from the data)
+# delete before submit!
+def dataChecker(data):
+    for instance in data:
+        for i in xrange(len(instance)):
+            if feature_vals[i] != TYPE_NUMERIC and instance[i] not in feature_vals[i]:
+                print "ERROR: Unrecognizable Feature!"
+    return 0
+
+def printAllFeatures(metadata, feature_vals):
+    for i in range(len(feature_vals)):
+        if isNumeric(metadata.types()[i]):
+            featurevalues = "[......]"
+            # featurevalues = str(feature_vals[i])
+        else:
+            featurevalues = str(feature_vals[i])
+
+        print "%d\t%8s\t%s\t%s" % \
+              (i, metadata.names()[i], metadata.types()[i], featurevalues)
+        # print "\n"
+
+######################## NOT USED FUNCTIONS, TESTERS ########################
 
 
-######################## NOT USED FUNCTIONS ########################
+
+
+def testSplitData_continous(featureIdx, threshold):
+    # call the function
+    data_divided = splitData_continuous(data_train, featureIdx, threshold)
+    # pint the split
+    for data_sub in data_divided:
+        for instance in data_sub:
+            print instance[featureIdx]
+        print "\n"
+
+def testSplitData_discrete(featureIdx):
+    # call the function
+    data_divided = splitData_discrete(data_train, featureIdx, feature_vals[featureIdx])
+    # pint the split
+    for data_sub in data_divided:
+        for instance in data_sub:
+            print instance[featureIdx]
+        print "\n"
+
 
 # def getFeatureRange(fname_train):
 #     feature_range = []
@@ -25,7 +70,7 @@ def isContinuous(type_str):
 #             # pop out line header and feature name
 #             range_str.pop(0);range_str.pop(0)
 #             # check if the feature is continuous or discrete
-#             if isContinuous(range_str[0]):
+#             if isNumeric(range_str[0]):
 #                 feature_range.append(TYPE_NUMERIC)
 #             else:
 #                 # remove the two brakets
