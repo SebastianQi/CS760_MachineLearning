@@ -124,23 +124,22 @@ def neighbourMean(nparray):
     return np.divide(np.add(nparray[0:-1], nparray[1:]), 2.0)
 
 
-
-def computeEntropy_binary(classLabels, classRange):
+def computeEntropy_binary(label_col, label_range):
     # assume the class range has cardinality 2
-    if not len(classRange) == 2:
+    if not len(label_range) == 2:
         sys.exit('ERROR: non-binary class labels.')
 
     # count the frequency for one class
     count = 0
-    for label in classLabels:
-        if label == classRange[0]:
+    for label in label_col:
+        if label == label_range[0]:
             count+=1
 
-    if count == len(classLabels) or count == 0:
+    if count == len(label_col) or count == 0:
         return 0
     else:
         # MLE for p
-        p = 1.0 * count / len(classLabels)
+        p = 1.0 * count / len(label_col)
         # compute entropy
         entropy = -p * np.log2(p) - (1-p) * np.log2(1-p)
         return entropy
@@ -159,27 +158,31 @@ def computeEntropy_dividedSet(_data_divded, _data_whole, _classRange):
     return entropy
 
 
+def findBestThreshold(data_train, featureIdx, feature_vals):
+    allThresholds = neighbourMean(np.array(feature_vals[featureIdx]))
+    # find the threshold (split) with the lowest entropy
+    bestThreshold = allThresholds[0]
+    minEntropy = float('inf')
+    for t in range(len(allThresholds)):
+        # split the data with the t-th threshold
+        data_divded = splitData_continuous(data_train, featureIdx, allThresholds[t])
+        entropy = computeEntropy_dividedSet(data_divded, data_train, feature_vals[-1])
+        # keep track of the min entropy and its index
+        if entropy < minEntropy:
+            minEntropy = entropy
+            bestThreshold = allThresholds[t]
+    return minEntropy, bestThreshold
+
+
+
 def computeConditionalEntropy():
     # loop over all features
     entropy_YgX = np.zeros((nFeature - 1, 1,))
-    for i in range(nFeature - 1):
 
+    for i in range(nFeature - 1):
         # condition 1: numeric feature
         if isNumeric(metadata.types()[i]):
-            allThresholds = neighbourMean(np.array(feature_vals[i]))
-            # find the threshold (split) with the lowest entropy
-            minEntropy_idx = -1
-            minEntropy = float('inf')
-            for t in range(len(allThresholds)):
-                # split the data with the t-th threshold
-                data_divded = splitData_continuous(data_train, i, allThresholds[t])
-                entropy = computeEntropy_dividedSet(data_divded, data_train, feature_vals[-1])
-                # keep track of the min entropy and its index
-                if entropy < minEntropy:
-                    minEntropy = entropy
-                    minEntropy_idx = t
-            # get the minimum
-            entropy = minEntropy
+            entropy, bestThreshold_idx = findBestThreshold(data_train, i, feature_vals)
 
         # condition 2: nominal feature
         else:
@@ -207,12 +210,11 @@ nFeature = len(metadata.types())
 printAllFeatures(metadata, feature_vals)
 print "\n"
 
-
 entropy_Y = computeEntropy_binary(columns[-1], feature_vals[-1])
 entropy_YgX = computeConditionalEntropy()
+infomationGain = np.subtract(entropy_Y, entropy_YgX)
 
-
-print entropy_YgX
+print infomationGain
 
 
 # start creating the tree
