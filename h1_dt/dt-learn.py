@@ -1,7 +1,6 @@
 import numpy as np
 import scipy.io.arff as sp
 import sys
-import arff
 
 
 from decisionTreeNode import decisionTreeNode
@@ -46,31 +45,6 @@ def loadData(_data):
 
 
 ###################### DT Functions ##########################
-
-def determineCandidateSplits(data):
-    return 0
-
-def stoppingGrowing():
-    return 0
-
-def findBestSplit():
-    return 0
-
-def makeSubtree(data):
-    C = DetermineCandidateSplits(D)
-    if stoppingGrowing():
-        temp = 0
-        # make a leaf node N
-        # determine class label for N
-    else:
-        # make an internal node N
-        S = findBestSplit(D, C)
-    #     for eachOutcome k of S
-    #         Dk = subset of instances that have outcome k
-    #         kth child of N = MakeSubtree(Dk)
-    # return subtree rooted at N
-    return 0
-
 
 
 def splitData_continuous(_data, _featureIdx, _threshold):
@@ -135,8 +109,10 @@ def computeEntropy_binary(label_col, label_range):
         if label == label_range[0]:
             count+=1
 
+    # if the class is pure, then there is no entropy
     if count == len(label_col) or count == 0:
         return 0
+    # compute the entropy for non-pure sample
     else:
         # MLE for p
         p = 1.0 * count / len(label_col)
@@ -147,7 +123,9 @@ def computeEntropy_binary(label_col, label_range):
 
 def computeEntropy_dividedSet(_data_divded, _data_whole, _classRange):
     entropy = 0
+    # for each subset
     for data_sub in _data_divded:
+        # collect all class labels
         classLabels = []
         for instance in data_sub:
             classLabels.append(instance[-1])
@@ -166,34 +144,74 @@ def findBestThreshold(data_train, featureIdx, feature_vals):
     for t in range(len(allThresholds)):
         # split the data with the t-th threshold
         data_divded = splitData_continuous(data_train, featureIdx, allThresholds[t])
-        entropy = computeEntropy_dividedSet(data_divded, data_train, feature_vals[-1])
+        entropy_temp = computeEntropy_dividedSet(data_divded, data_train, feature_vals[-1])
         # keep track of the min entropy and its index
-        if entropy < minEntropy:
-            minEntropy = entropy
+        # when there is a tie, pick the first one, achieved by < (instead of <=)
+        if entropy_temp < minEntropy:
+            minEntropy = entropy_temp
             bestThreshold = allThresholds[t]
     return minEntropy, bestThreshold
 
 
 
-def computeConditionalEntropy():
+def computeConditionalEntropy(_data, _feature_vals, _metadata):
     # loop over all features
-    entropy_YgX = np.zeros((nFeature - 1, 1,))
+    nFeatures = len(metadata.types())
+    entropy_YgX = np.zeros((nFeatures - 1, 1,))
 
-    for i in range(nFeature - 1):
+    for i in range(nFeatures - 1):
         # condition 1: numeric feature
-        if isNumeric(metadata.types()[i]):
-            entropy, bestThreshold_idx = findBestThreshold(data_train, i, feature_vals)
+        if isNumeric(_metadata.types()[i]):
+            entropy, bestThreshold_idx = findBestThreshold(_data, i, _feature_vals)
 
         # condition 2: nominal feature
         else:
             # split the data with the ith feature
-            data_divded = splitData_discrete(data_train, i, feature_vals[i])
+            data_divded = splitData_discrete(_data, i, _feature_vals[i])
             # accumulate entropy
-            entropy = computeEntropy_dividedSet(data_divded, data_train, feature_vals[-1])
+            entropy = computeEntropy_dividedSet(data_divded, _data, _feature_vals[-1])
 
         entropy_YgX[i] = entropy
 
     return entropy_YgX
+
+
+def computInfoGain(yLabels,yRange, _data, _feature_vals, _metadata):
+    entropy_Y = computeEntropy_binary(yLabels, yRange)
+    entropy_YgX = computeConditionalEntropy(_data, _feature_vals, _metadata)
+    infomationGain = np.subtract(entropy_Y, entropy_YgX)
+
+    return infomationGain
+
+
+###################### TREE FUNCTIONS ##########################
+
+def determineCandidateSplits(data):
+    return 0
+
+def stoppingGrowing():
+    return 0
+
+def findBestSplit():
+    infomationGain = computInfoGain(classLabels, classLabelsRange,
+                                    data_train, feature_vals, metadata)
+    return np.argmax(infomationGain)
+
+def makeSubtree(data):
+
+    if stoppingGrowing():
+        leaf = decisionTreeNode()
+        # make a leaf node N
+        # determine class label for N
+    else:
+        # make an internal node N
+        bestFeature_idx = findBestSplit()
+    #     for eachOutcome k of S
+    #         Dk = subset of instances that have outcome k
+    #         kth child of N = MakeSubtree(Dk)
+    # return subtree rooted at N
+    return 0
+
 
 ###################### END OF DEFINITIONS OF HELPER FUNCTIONS ##########################
 
@@ -210,11 +228,13 @@ nFeature = len(metadata.types())
 printAllFeatures(metadata, feature_vals)
 print "\n"
 
-entropy_Y = computeEntropy_binary(columns[-1], feature_vals[-1])
-entropy_YgX = computeConditionalEntropy()
-infomationGain = np.subtract(entropy_Y, entropy_YgX)
+classLabels = columns[-1]
+classLabelsRange = feature_vals[-1]
+# infomationGain = computInfoGain(classLabels, classLabelsRange, data_train, feature_vals, metadata)
 
-print infomationGain
+# print infomationGain
+print findBestSplit()
+
 
 
 # start creating the tree
