@@ -1,25 +1,15 @@
 import numpy as np
 
+x = range(10)
+index = np.zeros((10,), dtype=bool)
 
-array = range(10)
-print array
-
-means = np.zeros(len(array)-1)
-for i in range(len(array)-1):
-    means[i] = (array[i] + array[i+1]) / 2.0
-
-print means
-
-print np.divide(np.add(array[0:-1], array[1:]), 2.0)
+index[3] = True
 
 
-list = []
-for i in range(10):
-    list.append(i)
-
-array_list = np.array(list)
-
-
+print x
+x = np.array(x)
+print index
+print x[index]
 
 # for i in range(10):
 #     print i
