@@ -102,6 +102,11 @@ def splitData_discrete(data_, featureIdx_, feature_vals_):
 
 
 def neighbourMean(nparray):
+    '''
+    Find all possible threshold values given the a set of ordered feature values
+    :param nparray: order continuous valued feature vector
+    :return: threshold
+    '''
     return np.divide(np.add(nparray[0:-1], nparray[1:]), 2.0)
 
 
@@ -161,12 +166,15 @@ def findBestThreshold(data_train, featureIdx, feature_vals, yRange_):
 
 
 
-def computeConditionalEntropy(data_, feature_vals_, metadata_, yRange_):
+def computeConditionalEntropy(data_, feature_vals_, metadata_, yRange_, feature_used_):
     # loop over all features
-    nFeatures = len(metadata.types())
-    entropy_YgX = np.zeros((nFeatures - 1, 1,))
+    nFeatures = len(metadata_.types())
+    entropy_YgX = np.zeros((nFeatures-1,))
+    entropy_YgX.fill(np.NaN)
 
     for i in range(nFeatures - 1):
+        # skip features that is alread used
+        if feature_used_[i]: continue
         # condition 1: numeric feature
         if isNumeric(metadata_.types()[i]):
             entropy, bestThreshold_idx = findBestThreshold(data_, i, feature_vals_, yRange_)
@@ -178,15 +186,15 @@ def computeConditionalEntropy(data_, feature_vals_, metadata_, yRange_):
             # accumulate entropy
             entropy = computeEntropy_dividedSet(data_divded, data_, yRange_)
 
+        # save the entropy
         entropy_YgX[i] = entropy
-
     return entropy_YgX
 
 
-def computInfoGain(yLabels, yRange, data_, feature_vals_, metadata_):
+def computInfoGain(yLabels_, yRange_, data_, feature_vals_, metadata_, feature_used_):
     # compute information gain for all features
-    entropy_Y = computeEntropy_binary(yLabels, yRange)
-    entropy_YgX = computeConditionalEntropy(data_, feature_vals_, metadata_, yRange)
+    entropy_Y = computeEntropy_binary(yLabels_, yRange_)
+    entropy_YgX = computeConditionalEntropy(data_, feature_vals_, metadata_, yRange_, feature_used_)
     infomationGain = np.subtract(entropy_Y, entropy_YgX)
     return infomationGain
 
@@ -212,12 +220,11 @@ def findBestSplit(classLabels_, classLabelsRange_, data_train_, feature_vals_uni
     :param metadata_:
     :return:
     '''
-    infomationGain = computInfoGain(classLabels_, classLabelsRange_,
-                                    data_train_, feature_vals_unique_, metadata_)
-    # set the infoGain for selected feature to zero, so they will not be selected again
-    infomationGain[feature_used_] = 0
+    infomationGain = computInfoGain(classLabels_, classLabelsRange_, data_train_,
+                                    feature_vals_unique_, metadata_, feature_used_)
     # select the best feature
-    best_feature_index = np.argmax(infomationGain)
+    # Note that feature used will have NAN as its infoGain
+    best_feature_index = np.nanargmax(infomationGain)
 
     # TODO delete print
     print infomationGain
@@ -241,6 +248,7 @@ def makeSubtree(data):
     return 0
 
 
+
 def recordUsedFeature(feature_used_, best_feature_idx_):
     # if the input feature is discrete, then we can nolonger split on it
     if not isNumeric(metadata.types()[best_feature_idx_]):
@@ -249,11 +257,39 @@ def recordUsedFeature(feature_used_, best_feature_idx_):
         # TODO check if numeric, we should be able to split further (is this true?)
     return feature_used_
 
+
+def getMajorityClass(data_, classlabel_range_):
+    '''
+    get the majority vote for the current input data set
+    if there is a tie, choose the first class listed in "classlabel_range_"
+    the tie is handled by np.argmax()
+    :param data_: the current data set
+    :param classlabel_range_: all possible values for the class, should be binary
+    :return: the majority vote
+    '''
+    if not len(classlabel_range_) == 2:
+        raise Exception('ERROR:non-binary class detected')
+    count = np.zeros(2,)
+    # loop over all training example, count the occurence of each class value
+    for instance in data_:
+        if instance[-1] == classlabel_range_[0]:
+            count[0] +=1
+        elif instance[-1] == classlabel_range_[1]:
+            count[1] +=1
+        else:
+            raise Exception('ERROR:un-recognizable class label for the training example')
+    # return the majority
+    majorityClassLabel = classlabel_range_[np.argmax(count)]
+    return majorityClassLabel
+
 ###################### END OF DEFINITIONS OF HELPER FUNCTIONS ##########################
 
 # read input arguments
 fname_train, fname_test, m = processInputArgs()
 # load data
+# feature_range [tuple] = the possible values for discrete feature, None for continous
+# feature_vals_unique [list] = the observed values for all features
+# columns [list] = the actual feature vector from data_train
 data_train, metadata, feature_range, feature_vals_unique, columns = loadData(fname_train)
 
 # read some parameters
@@ -273,6 +309,8 @@ best_feature_idx = findBestSplit(classLabels, classLabelsRange, data_train,
 # update feature selection indicator
 feature_used = recordUsedFeature(feature_used, best_feature_idx)
 
+# split the data using the best feature
+# handle continous and discrete feature separately
 if isNumeric(metadata.types()[best_feature_idx]):
     _, bestThreshold = findBestThreshold(data_train, best_feature_idx, feature_vals_unique,
                                       classLabelsRange)
@@ -280,6 +318,24 @@ if isNumeric(metadata.types()[best_feature_idx]):
 else:
     data_divided = splitData_discrete(data_train,best_feature_idx,feature_vals_unique)
 
-# start creating the tree
+
+## start creating the tree
+
+# create the root
+n_feature_name = metadata.names()[best_feature_idx]
+n_feature_type = metadata.types()[best_feature_idx]
+n_feature_val = None
+n_feature_used = feature_used
+n_parent = None
+n_children = None
+n_label = getMajorityClass(data_train, classLabelsRange)
+
 node = decisionTreeNode()
-node.setFeature(metadata.names()[best_feature_idx], metadata.types()[best_feature_idx], None)
+node.setFeature(n_feature_name, n_feature_type, n_feature_val, n_feature_used)
+node.setParent(n_parent)
+node.setChildren(n_children)
+node.setClassificationLabel(n_label)
+
+
+
+print
