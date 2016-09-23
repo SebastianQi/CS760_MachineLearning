@@ -201,11 +201,30 @@ def computInfoGain(yLabels_, yRange_, data_, feature_vals_, metadata_, feature_u
 
 ###################### TREE FUNCTIONS ##########################
 
-def determineCandidateSplits(data):
-    return 0
+def setIsPure(data_):
+    labels = []
+    for instance in data_:
+        labels.append(instance[-1])
+    labels = set(labels)
 
-def stoppingGrowing():
-    return 0
+    if len(labels) == 1:
+        return True
+    return False
+
+
+def stoppingGrowing(data_):
+
+    # (i) all of the training instances reaching the node belong to the same class
+    if setIsPure(data_):
+        return True
+    # (ii) number of training instances reaching the node < m
+    if len(data_) < m:
+        return True
+    # (iii) no feature has positive information gain
+
+
+    # (iv) there are no more remaining candidate splits at the node.
+    return False
 
 
 
@@ -229,23 +248,6 @@ def findBestSplit(classLabels_, classLabelsRange_, data_train_, feature_vals_uni
     # TODO delete print
     print infomationGain
     return best_feature_index
-
-
-
-def makeSubtree(data):
-
-    if stoppingGrowing():
-        leaf = decisionTreeNode()
-        # make a leaf node N
-        # determine class label for N
-    else:
-        # make an internal node N
-        bestFeature_idx = findBestSplit()
-    #     for eachOutcome k of S
-    #         Dk = subset of instances that have outcome k
-    #         kth child of N = MakeSubtree(Dk)
-    # return subtree rooted at N
-    return 0
 
 
 
@@ -282,6 +284,106 @@ def getMajorityClass(data_, classlabel_range_):
     majorityClassLabel = classlabel_range_[np.argmax(count)]
     return majorityClassLabel
 
+
+
+def initTreeNode(data_, metadata_, classLabelsRange_, best_feature_idx_, feature_used_,
+                 feature_val_, parent_):
+    '''
+    Initialize a tree node
+    Note: this method doesn't initialize the children list
+    :param data_:
+    :param metadata_:
+    :param classLabelsRange_:
+    :param best_feature_idx_:
+    :param feature_used_:
+    :param feature_val_:
+    :param parent_:
+    :return:
+    '''
+    # create the root
+    n_feature_name = metadata_.names()[best_feature_idx_]
+    n_feature_type = metadata_.types()[best_feature_idx_]
+    n_feature_val = feature_val_
+    n_feature_used = feature_used_
+    n_parent = parent_
+    # n_children = children_
+    n_label = getMajorityClass(data_, classLabelsRange_)
+    # make the node
+    node = decisionTreeNode()
+    node.setFeature(n_feature_name, n_feature_type, n_feature_val, n_feature_used)
+    node.setClassificationLabel(n_label)
+    node.setParent(n_parent)
+    # node.setChildren(n_children)
+    return node
+
+def initLeaf(data_, classLabelsRange_, feature_used_, feature_val_, parent_):
+    '''
+
+    :param data_:
+    :param classLabelsRange_:
+    :param feature_used_:
+    :param feature_val_:
+    :param parent_:
+    :return:
+    '''
+    # create the root
+    n_feature_name = None
+    n_feature_type = None
+    n_feature_val = feature_val_
+    n_feature_used = feature_used_
+    n_parent = parent_
+    # n_children = children_
+    n_label = getMajorityClass(data_, classLabelsRange_)
+    # make the node
+    node = decisionTreeNode()
+    node.setFeature(n_feature_name, n_feature_type, n_feature_val, n_feature_used)
+    node.setClassificationLabel(n_label)
+    node.setParent(n_parent)
+    return node
+
+
+def makeSubtree(data_, metadata_, classLabels_, classLabelsRange_, feature_range_,
+                feature_vals_unique_, feature_used_, feature_val_cur_, parent_):
+
+    if stoppingGrowing(data_):
+        # make a leaf node N
+        leaf = initLeaf(data_, classLabelsRange_, feature_used_, feature_val_cur_, parent_)
+        return leaf
+
+    else:
+        # pick the best feature
+        best_feature_idx = findBestSplit(classLabels_, classLabelsRange_, data_,
+                                         feature_vals_unique_, metadata_, feature_used_)
+        # update feature selection indicator
+        feature_used_ = recordUsedFeature(feature_used_, best_feature_idx)
+
+        # start creating the tree
+        node = initTreeNode(data_, metadata_, classLabelsRange_, best_feature_idx, feature_used_,
+                            feature_val_cur_, parent_)
+
+        # split the data using the best feature
+        # handle continous and discrete feature separately
+        if isNumeric(metadata_.types()[best_feature_idx]):
+            _, bestThreshold = findBestThreshold(data_, best_feature_idx, feature_vals_unique_,
+                                                 classLabelsRange_)
+            data_divided = splitData_continuous(data_, best_feature_idx, bestThreshold)
+        else:
+            data_divided = splitData_discrete(data_, best_feature_idx, feature_vals_unique_)
+
+
+        # for eachOutcome k of S, create children
+        for i in range(len(feature_range_[best_feature_idx])):
+            # Dk = subset of instances that have outcome k
+            feature_value_cur_ = feature_range_[best_feature_idx][i]
+            data_cur = data_divided[i]
+            parent_ = node
+            child_i = makeSubtree(data_cur, metadata_, classLabels_, classLabelsRange_,
+                                  feature_range_, feature_vals_unique_, feature_used_,
+                                  feature_value_cur_, parent_)
+            node.setChildren(child_i)
+    # return subtree rooted at N
+    return node
+
 ###################### END OF DEFINITIONS OF HELPER FUNCTIONS ##########################
 
 # read input arguments
@@ -293,49 +395,16 @@ fname_train, fname_test, m = processInputArgs()
 data_train, metadata, feature_range, feature_vals_unique, columns = loadData(fname_train)
 
 # read some parameters
-nTrain = len(data_train)
-nFeature = len(metadata.types())
-feature_used = np.zeros((nFeature-1,), dtype=bool)
+feature_used = np.zeros((len(metadata.types()) - 1,), dtype=bool)
 classLabels = columns[-1]
 classLabelsRange = feature_range[-1]
 
-# # test
-# printAllFeatures(metadata, feature_range)
-# print "\n"
+# test
+printAllFeatures(metadata, feature_range)
+print "\n"
 
-# pick the best feature
-best_feature_idx = findBestSplit(classLabels, classLabelsRange, data_train,
-                                 feature_vals_unique, metadata, feature_used)
-# update feature selection indicator
-feature_used = recordUsedFeature(feature_used, best_feature_idx)
+feature_val_cur = None
+parent = None
+root = makeSubtree(data_train, metadata, classLabels, classLabelsRange, feature_range,
+            feature_vals_unique, feature_used, feature_val_cur, parent)
 
-# split the data using the best feature
-# handle continous and discrete feature separately
-if isNumeric(metadata.types()[best_feature_idx]):
-    _, bestThreshold = findBestThreshold(data_train, best_feature_idx, feature_vals_unique,
-                                      classLabelsRange)
-    data_divided = splitData_continuous(data_train, best_feature_idx, bestThreshold )
-else:
-    data_divided = splitData_discrete(data_train,best_feature_idx,feature_vals_unique)
-
-
-## start creating the tree
-
-# create the root
-n_feature_name = metadata.names()[best_feature_idx]
-n_feature_type = metadata.types()[best_feature_idx]
-n_feature_val = None
-n_feature_used = feature_used
-n_parent = None
-n_children = None
-n_label = getMajorityClass(data_train, classLabelsRange)
-
-node = decisionTreeNode()
-node.setFeature(n_feature_name, n_feature_type, n_feature_val, n_feature_used)
-node.setParent(n_parent)
-node.setChildren(n_children)
-node.setClassificationLabel(n_label)
-
-
-
-print

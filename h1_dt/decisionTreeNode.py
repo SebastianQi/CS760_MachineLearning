@@ -33,9 +33,11 @@ class decisionTreeNode:
     # setters
     def setFeature(self, _feature, _feature_type, _feature_val, _feature_used):
         # check input
-        # TODO if numeric, feature val should be a number, else, it should be None
         self.feature = _feature
         self.feature_type = _feature_type
+        # if parent nominal, feature val the val of that nominal variable
+        # else, it should be None
+        # TODO OR if numeric, feature val should be a number, else, it should be None
         self.feature_val = _feature_val
         self.feature_used = _feature_used
 
