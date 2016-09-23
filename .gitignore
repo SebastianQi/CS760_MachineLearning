@@ -3,6 +3,8 @@
 .iml
 .idea/
 .idea
-.pyc
+*.iml
+*.xml
+*.pyc
 
 
