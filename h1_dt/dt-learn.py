@@ -134,6 +134,14 @@ def computeEntropy_binary(label_col, label_range):
 
 
 def computeEntropy_dividedSet(data_divded, data_whole, classRange_):
+    '''
+    Compute the entropy for a list of data subsets
+    :param data_divded:
+    :param data_whole:
+    :param classRange_:
+    :return:
+    '''
+    if len(data_whole) == 0: raise Exception('ERROR: the input data set is empty')
     entropy = 0
     # for each subset
     for data_sub in data_divded:
@@ -148,15 +156,15 @@ def computeEntropy_dividedSet(data_divded, data_whole, classRange_):
     return entropy
 
 
-def findBestThreshold(data_train, featureIdx, feature_vals, yRange_):
-    allThresholds = neighbourMean(np.array(feature_vals[featureIdx]))
+def findBestThreshold(data_, featureIdx_, feature_vals_, yRange_):
+    allThresholds = neighbourMean(np.array(feature_vals_[featureIdx_]))
     # find the threshold (split) with the lowest entropy
     bestThreshold = allThresholds[0]
     minEntropy = float('inf')
     for t in range(len(allThresholds)):
         # split the data with the t-th threshold
-        data_divded = splitData_continuous(data_train, featureIdx, allThresholds[t])
-        entropy_temp = computeEntropy_dividedSet(data_divded, data_train, yRange_)
+        data_divded = splitData_continuous(data_, featureIdx_, allThresholds[t])
+        entropy_temp = computeEntropy_dividedSet(data_divded, data_, yRange_)
         # keep track of the min entropy and its index
         # when there is a tie, pick the first one, achieved by < (instead of <=)
         if entropy_temp < minEntropy:
@@ -246,7 +254,8 @@ def findBestSplit(classLabels_, classLabelsRange_, data_train_, feature_vals_uni
     best_feature_index = np.nanargmax(infomationGain)
 
     # TODO delete print
-    print infomationGain
+    # print infomationGain
+    # print best_feature_index
     return best_feature_index
 
 
@@ -335,11 +344,14 @@ def initLeaf(data_, classLabelsRange_, feature_used_, feature_val_, parent_):
     # n_children = children_
     n_label = getMajorityClass(data_, classLabelsRange_)
     # make the node
-    node = decisionTreeNode()
-    node.setFeature(n_feature_name, n_feature_type, n_feature_val, n_feature_used)
-    node.setClassificationLabel(n_label)
-    node.setParent(n_parent)
-    return node
+    leaf = decisionTreeNode()
+    leaf.setToLeaf()
+
+    leaf.setFeature(n_feature_name, n_feature_type, n_feature_val, n_feature_used)
+    leaf.setClassificationLabel(n_label)
+    leaf.setParent(n_parent)
+
+    return leaf
 
 
 def makeSubtree(data_, metadata_, classLabels_, classLabelsRange_, feature_range_,
@@ -367,22 +379,62 @@ def makeSubtree(data_, metadata_, classLabels_, classLabelsRange_, feature_range
             _, bestThreshold = findBestThreshold(data_, best_feature_idx, feature_vals_unique_,
                                                  classLabelsRange_)
             data_divided = splitData_continuous(data_, best_feature_idx, bestThreshold)
-        else:
-            data_divided = splitData_discrete(data_, best_feature_idx, feature_vals_unique_)
 
-
-        # for eachOutcome k of S, create children
-        for i in range(len(feature_range_[best_feature_idx])):
-            # Dk = subset of instances that have outcome k
-            feature_value_cur_ = feature_range_[best_feature_idx][i]
-            data_cur = data_divided[i]
             parent_ = node
-            child_i = makeSubtree(data_cur, metadata_, classLabels_, classLabelsRange_,
+            # make the left child
+            feature_value_cur_ = bestThreshold
+            data_cur = data_divided[0]
+            child_left = makeSubtree(data_cur, metadata_, classLabels_, classLabelsRange_,
                                   feature_range_, feature_vals_unique_, feature_used_,
                                   feature_value_cur_, parent_)
-            node.setChildren(child_i)
+            node.setChildren(child_left)
+            # make the right child
+            feature_value_cur_ = bestThreshold
+            data_cur = data_divided[1]
+            child_right = makeSubtree(data_cur, metadata_, classLabels_, classLabelsRange_,
+                                     feature_range_, feature_vals_unique_, feature_used_,
+                                     feature_value_cur_, parent_)
+            node.setChildren(child_right)
+
+
+
+        else:
+            data_divided = splitData_discrete(data_, best_feature_idx, feature_vals_unique_[best_feature_idx])
+
+            # for eachOutcome k of S, create children
+            for i in range(len(feature_range_[best_feature_idx])):
+                # Dk = subset of instances that have outcome k
+                feature_value_cur_ = feature_range_[best_feature_idx][i]
+                data_cur = data_divided[i]
+                parent_ = node
+                child_i = makeSubtree(data_cur, metadata_, classLabels_, classLabelsRange_,
+                                      feature_range_, feature_vals_unique_, feature_used_,
+                                      feature_value_cur_, parent_)
+                node.setChildren(child_i)
+
     # return subtree rooted at N
     return node
+
+
+
+def printNode(node):
+    if node.parent == None:
+        name = "ROOT"
+        node.printInfo()
+    else:
+        name = node.feature_val
+        node.printInfo()
+
+    if node.isLeaf:
+        label = node.getClassification()
+        print label
+        print "\n"
+    else:
+        for child in node.getChildren():
+            printNode(child)
+
+
+
 
 ###################### END OF DEFINITIONS OF HELPER FUNCTIONS ##########################
 
@@ -407,4 +459,21 @@ feature_val_cur = None
 parent = None
 root = makeSubtree(data_train, metadata, classLabels, classLabelsRange, feature_range,
             feature_vals_unique, feature_used, feature_val_cur, parent)
+
+#
+# children = root.getChildren()
+# featureName = root.getFeatureName()
+# featureValues = root.getFeatureValue()
+
+
+# printNode(root)
+
+
+
+# 1  procedure DFS(G,v):
+# 2      label v as discovered
+# 3      for all edges from v to w in G.adjacentEdges(v) do
+# 4          if vertex w is not labeled as discovered then
+# 5              recursively call DFS(G,w)
+
 

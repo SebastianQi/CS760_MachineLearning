@@ -1,15 +1,9 @@
 import numpy as np
+length = 10
+feature_used = np.zeros((length,), dtype=bool)
+index_feature_used = [0,2,4]
+feature_used[index_feature_used] = True
 
-x = range(10)
-index = np.zeros((10,), dtype=bool)
-
-index[3] = True
-
-
-print x
-x = np.array(x)
-print index
-print x[index]
-
-# for i in range(10):
-#     print i
+for i in range(length):
+    if feature_used[i]: continue
+    print i

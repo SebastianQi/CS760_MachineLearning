@@ -3,7 +3,8 @@ from util import *
 # tree node for ID3 classification tree
 class decisionTreeNode:
     def __init__(self, feature = None , feature_type = None, feature_val = None,
-                 parent = None, children = [], classification = None, feature_used = None):
+                 parent = None, children = [], classification = None, feature_used = None,
+                 isLeaf = False):
         '''
         :param feature:         the name of this feature
         :param feature_type:    nominal or numeric
@@ -19,6 +20,7 @@ class decisionTreeNode:
         self.parent = parent
         self.children = children
         self.classification = classification
+        self.isLeaf = isLeaf
 
     # getters
     def getChildren(self):
@@ -29,6 +31,18 @@ class decisionTreeNode:
 
     def getParent(self):
         return self.parent
+
+    def getFeatureName(self):
+        return self.feature
+
+    def getUsedFeature(self):
+        return self.feature_used
+
+    def getFeatureType(self):
+        return self.feature_type
+
+    def getFeatureValue(self):
+        return self.feature_val
 
     # setters
     def setFeature(self, _feature, _feature_type, _feature_val, _feature_used):
@@ -42,7 +56,6 @@ class decisionTreeNode:
         self.feature_used = _feature_used
 
 
-
     def setChildren(self, _children):
         self.children.append(_children)
 
@@ -51,3 +64,14 @@ class decisionTreeNode:
 
     def setClassificationLabel(self, _classLabel):
         self.classification = _classLabel
+
+    def setToLeaf(self):
+        self.isLeaf = True
+
+
+    ## other methods
+
+    def printInfo(self):
+        print "%s - %s - %s" % (self.feature, self.feature_type, self.feature_val)
+        # print "\t%s" % ()
+
