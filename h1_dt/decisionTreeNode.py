@@ -1,4 +1,5 @@
 from util import *
+import numpy as np
 
 # tree node for ID3 classification tree
 class decisionTreeNode:
@@ -21,6 +22,10 @@ class decisionTreeNode:
         self.children = children
         self.classification = classification
         self.isLeaf = isLeaf
+        self.feature_used = feature_used
+
+        self.depth = 0
+        self.dataCounts = np.array(2,)
 
     # getters
     def getChildren(self):
@@ -43,6 +48,7 @@ class decisionTreeNode:
 
     def getFeatureValue(self):
         return self.feature_val
+
 
     # setters
     def setFeature(self, _feature, _feature_type, _feature_val, _feature_used):
@@ -68,10 +74,20 @@ class decisionTreeNode:
     def setToLeaf(self):
         self.isLeaf = True
 
+    def setDepth(self, depth_):
+        self.depth = depth_
+
+
+    def isTerminalNode(self):
+        if self.isLeaf:
+            return True
+        return False
 
     ## other methods
 
     def printInfo(self):
-        print "%s - %s - %s" % (self.feature, self.feature_type, self.feature_val)
+
+        # print "%s - %s - %s" % (str(self.feature), str(self.feature_type), str(self.feature_val))
+        print "%s" % (str(self.feature))
         # print "\t%s" % ()
 

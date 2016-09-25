@@ -1,5 +1,6 @@
 import numpy as np
-import scipy.io.arff as sp
+import scipy.io.arff as sparff
+import scipy as sp
 import sys
 
 
@@ -37,7 +38,7 @@ def getFeatureVals(data_, metadata_):
 
 def loadData(data_):
     # read the training data
-    data, metadata = sp.loadarff(data_)
+    data, metadata = sparff.loadarff(data_)
 
     # from metadata, save feature valus as a list of tuples
     feature_range = []
@@ -79,7 +80,7 @@ def splitData_continuous(data_, featureIdx_, threshold_):
 
 
 
-def splitData_discrete(data_, featureIdx_, feature_vals_):
+def splitData_discrete(data_, featureIdx_, feature_range_):
     '''
     Divided the data set with respect to feature F
     :param data_:
@@ -89,7 +90,7 @@ def splitData_discrete(data_, featureIdx_, feature_vals_):
     '''
     data_divided = []
     # for ith feature value, F_i
-    for _feature_val in feature_vals_:
+    for _feature_val in feature_range_:
         data_sub = []
         # loop over all instances
         for instance in data_:
@@ -157,6 +158,8 @@ def computeEntropy_dividedSet(data_divded, data_whole, classRange_):
 
 
 def findBestThreshold(data_, featureIdx_, feature_vals_, yRange_):
+    if len(data_) == 0: raise Exception('ERROR: the input data set is empty')
+
     allThresholds = neighbourMean(np.array(feature_vals_[featureIdx_]))
     # find the threshold (split) with the lowest entropy
     bestThreshold = allThresholds[0]
@@ -174,7 +177,8 @@ def findBestThreshold(data_, featureIdx_, feature_vals_, yRange_):
 
 
 
-def computeConditionalEntropy(data_, feature_vals_, metadata_, yRange_, feature_used_):
+def computeConditionalEntropy(data_, feature_vals_, metadata_, yRange_, feature_used_,
+                              feature_range_):
     # loop over all features
     nFeatures = len(metadata_.types())
     entropy_YgX = np.zeros((nFeatures-1,))
@@ -182,7 +186,8 @@ def computeConditionalEntropy(data_, feature_vals_, metadata_, yRange_, feature_
 
     for i in range(nFeatures - 1):
         # skip features that is alread used
-        if feature_used_[i]: continue
+        if feature_used_[i]:
+            continue
         # condition 1: numeric feature
         if isNumeric(metadata_.types()[i]):
             entropy, bestThreshold_idx = findBestThreshold(data_, i, feature_vals_, yRange_)
@@ -190,7 +195,7 @@ def computeConditionalEntropy(data_, feature_vals_, metadata_, yRange_, feature_
         # condition 2: nominal feature
         else:
             # split the data with the ith feature
-            data_divded = splitData_discrete(data_, i, feature_vals_[i])
+            data_divded = splitData_discrete(data_, i, feature_range[i])
             # accumulate entropy
             entropy = computeEntropy_dividedSet(data_divded, data_, yRange_)
 
@@ -199,45 +204,66 @@ def computeConditionalEntropy(data_, feature_vals_, metadata_, yRange_, feature_
     return entropy_YgX
 
 
-def computInfoGain(yLabels_, yRange_, data_, feature_vals_, metadata_, feature_used_):
+def computInfoGain(yLabels_, yRange_, data_, feature_vals_, metadata_, feature_used_,
+                   feature_range_):
     # compute information gain for all features
     entropy_Y = computeEntropy_binary(yLabels_, yRange_)
-    entropy_YgX = computeConditionalEntropy(data_, feature_vals_, metadata_, yRange_, feature_used_)
+    entropy_YgX = computeConditionalEntropy(data_, feature_vals_, metadata_, yRange_,
+                                            feature_used_, feature_range_)
     infomationGain = np.subtract(entropy_Y, entropy_YgX)
     return infomationGain
 
 
 ###################### TREE FUNCTIONS ##########################
 
-def setIsPure(data_):
-    labels = []
-    for instance in data_:
-        labels.append(instance[-1])
-    labels = set(labels)
-
-    if len(labels) == 1:
-        return True
-    return False
 
 
-def stoppingGrowing(data_):
+
+def stoppingGrowing(data_, infomationGain_, feature_used_):
+    '''
+    The stopping criterion for the decision tree growing process.
+    :param data_:
+    :param infomationGain_:
+    :param feature_used_:
+    :return:
+    '''
+    def setIsPure(data_):
+        '''
+        check if a data set is pure, in terms of the class label
+        :param data_:
+        :return:
+        '''
+        labels = []
+        # collect all class labels
+        for instance in data_:
+            labels.append(instance[-1])
+        labels = set(labels)
+        # check if set cardinality == 1
+        if len(labels) == 1:
+            return True
+        return False
+    # remove nan value
+    infomationGain_ = np.array(infomationGain_)
+    infomationGain_ = infomationGain_[~np.isnan(infomationGain_)]
 
     # (i) all of the training instances reaching the node belong to the same class
     if setIsPure(data_):
         return True
     # (ii) number of training instances reaching the node < m
-    if len(data_) < m:
+    elif len(data_) < m:
         return True
     # (iii) no feature has positive information gain
-
-
+    elif all(sp.less(infomationGain_, 0)):
+        return True
     # (iv) there are no more remaining candidate splits at the node.
+    elif all(feature_used_):
+        return True
     return False
 
 
 
-def findBestSplit(classLabels_, classLabelsRange_, data_train_, feature_vals_unique_,
-                  metadata_, feature_used_):
+def findBestSplit(classLabels_, classLabelsRange_, data_, feature_vals_unique_,
+                  metadata_, feature_used_, feature_range_):
     '''
     Return feature that maximize information gain
     :param classLabels_:
@@ -247,29 +273,20 @@ def findBestSplit(classLabels_, classLabelsRange_, data_train_, feature_vals_uni
     :param metadata_:
     :return:
     '''
-    infomationGain = computInfoGain(classLabels_, classLabelsRange_, data_train_,
-                                    feature_vals_unique_, metadata_, feature_used_)
+    infomationGain = computInfoGain(classLabels_, classLabelsRange_, data_,
+                                    feature_vals_unique_, metadata_, feature_used_, feature_range_)
     # select the best feature
     # Note that feature used will have NAN as its infoGain
     best_feature_index = np.nanargmax(infomationGain)
 
     # TODO delete print
-    # print infomationGain
-    # print best_feature_index
+    print infomationGain
+    print best_feature_index
     return best_feature_index
 
 
 
-def recordUsedFeature(feature_used_, best_feature_idx_):
-    # if the input feature is discrete, then we can nolonger split on it
-    if not isNumeric(metadata.types()[best_feature_idx_]):
-        feature_used_[best_feature_idx_] = True
-    # else:
-        # TODO check if numeric, we should be able to split further (is this true?)
-    return feature_used_
-
-
-def getMajorityClass(data_, classlabel_range_):
+def getMajorityClass(data_, classlabel_range_, parent_):
     '''
     get the majority vote for the current input data set
     if there is a tie, choose the first class listed in "classlabel_range_"
@@ -280,17 +297,24 @@ def getMajorityClass(data_, classlabel_range_):
     '''
     if not len(classlabel_range_) == 2:
         raise Exception('ERROR:non-binary class detected')
-    count = np.zeros(2,)
+    count1 = 0
+    count2 = 0
     # loop over all training example, count the occurence of each class value
     for instance in data_:
         if instance[-1] == classlabel_range_[0]:
-            count[0] +=1
+            count1 +=1
         elif instance[-1] == classlabel_range_[1]:
-            count[1] +=1
+            count2 +=1
         else:
             raise Exception('ERROR:un-recognizable class label for the training example')
     # return the majority
-    majorityClassLabel = classlabel_range_[np.argmax(count)]
+    if count1 > count2:
+        majorityClassLabel = classlabel_range_[0]
+    elif count1 < count2:
+        majorityClassLabel = classlabel_range_[1]
+    else:
+        # if equal, take the majority class for the parent node
+        majorityClassLabel = parent_.getClassification();
     return majorityClassLabel
 
 
@@ -316,7 +340,7 @@ def initTreeNode(data_, metadata_, classLabelsRange_, best_feature_idx_, feature
     n_feature_used = feature_used_
     n_parent = parent_
     # n_children = children_
-    n_label = getMajorityClass(data_, classLabelsRange_)
+    n_label = getMajorityClass(data_, classLabelsRange_, parent_)
     # make the node
     node = decisionTreeNode()
     node.setFeature(n_feature_name, n_feature_type, n_feature_val, n_feature_used)
@@ -324,6 +348,8 @@ def initTreeNode(data_, metadata_, classLabelsRange_, best_feature_idx_, feature
     node.setParent(n_parent)
     # node.setChildren(n_children)
     return node
+
+
 
 def initLeaf(data_, classLabelsRange_, feature_used_, feature_val_, parent_):
     '''
@@ -342,7 +368,7 @@ def initLeaf(data_, classLabelsRange_, feature_used_, feature_val_, parent_):
     n_feature_used = feature_used_
     n_parent = parent_
     # n_children = children_
-    n_label = getMajorityClass(data_, classLabelsRange_)
+    n_label = getMajorityClass(data_, classLabelsRange_, parent_)
     # make the node
     leaf = decisionTreeNode()
     leaf.setToLeaf()
@@ -354,10 +380,34 @@ def initLeaf(data_, classLabelsRange_, feature_used_, feature_val_, parent_):
     return leaf
 
 
+def recordUsedFeature_discrete(feature_used_, best_feature_idx_):
+    # if the input feature is discrete, then we can nolonger split on it
+    if not isNumeric(metadata.types()[best_feature_idx_]):
+        feature_used_[best_feature_idx_] = True
+    else:
+        raise Exception('The feature is continuous')
+    return feature_used_
+
+
+def recordUsedFeature_continuous(data_,best_feature_idx_,feature_used_):
+    list = []
+    for instance in data_:
+        list.append(instance[best_feature_idx_])
+    list = set(list)
+    if len(list) == 1:
+        feature_used_[best_feature_idx_] = True
+    return feature_used_
+
+
 def makeSubtree(data_, metadata_, classLabels_, classLabelsRange_, feature_range_,
                 feature_vals_unique_, feature_used_, feature_val_cur_, parent_):
+    if len(data_) == 0: raise Exception('ERROR: there is no data')
 
-    if stoppingGrowing(data_):
+    # compute the current info gain for stop check
+    infomationGain = computInfoGain(classLabels_, classLabelsRange_, data_,
+                                    feature_vals_unique_, metadata_, feature_used_, feature_range_)
+
+    if stoppingGrowing(data_, infomationGain, feature_used_):
         # make a leaf node N
         leaf = initLeaf(data_, classLabelsRange_, feature_used_, feature_val_cur_, parent_)
         return leaf
@@ -365,9 +415,10 @@ def makeSubtree(data_, metadata_, classLabels_, classLabelsRange_, feature_range
     else:
         # pick the best feature
         best_feature_idx = findBestSplit(classLabels_, classLabelsRange_, data_,
-                                         feature_vals_unique_, metadata_, feature_used_)
-        # update feature selection indicator
-        feature_used_ = recordUsedFeature(feature_used_, best_feature_idx)
+                                         feature_vals_unique_, metadata_, feature_used_,
+                                         feature_range_)
+        # # update feature selection indicator
+        # feature_used_ = recordUsedFeature(feature_used_, best_feature_idx)
 
         # start creating the tree
         node = initTreeNode(data_, metadata_, classLabelsRange_, best_feature_idx, feature_used_,
@@ -381,34 +432,54 @@ def makeSubtree(data_, metadata_, classLabels_, classLabelsRange_, feature_range
             data_divided = splitData_continuous(data_, best_feature_idx, bestThreshold)
 
             parent_ = node
+            feature_value_cur_ = bestThreshold
+
             # make the left child
-            feature_value_cur_ = bestThreshold
-            data_cur = data_divided[0]
-            child_left = makeSubtree(data_cur, metadata_, classLabels_, classLabelsRange_,
-                                  feature_range_, feature_vals_unique_, feature_used_,
-                                  feature_value_cur_, parent_)
-            node.setChildren(child_left)
+            data_left = data_divided[0]
+            if not len(data_left) == 0:
+                # update feature selection indicator
+                feature_used_left = recordUsedFeature_continuous(data_left, best_feature_idx,
+                                                                feature_used)
+                # create a child note
+                child_left = makeSubtree(data_left, metadata_, classLabels_, classLabelsRange_,
+                                      feature_range_, feature_vals_unique_, feature_used_left,
+                                      feature_value_cur_, parent_)
+                # connect to parent
+                node.setChildren(child_left)
+
             # make the right child
-            feature_value_cur_ = bestThreshold
-            data_cur = data_divided[1]
-            child_right = makeSubtree(data_cur, metadata_, classLabels_, classLabelsRange_,
-                                     feature_range_, feature_vals_unique_, feature_used_,
-                                     feature_value_cur_, parent_)
-            node.setChildren(child_right)
+            data_right = data_divided[1]
+            if not len(data_right) == 0:
+                # update feature selection indicator
+                feature_used_right = recordUsedFeature_continuous(data_right, best_feature_idx,
+                                                                feature_used)
+                # create a child note
+                child_right = makeSubtree(data_right, metadata_, classLabels_, classLabelsRange_,
+                                         feature_range_, feature_vals_unique_, feature_used_right,
+                                         feature_value_cur_, parent_)
+                # connect to parent
+                node.setChildren(child_right)
 
 
-
+        # for discrete feature
         else:
-            data_divided = splitData_discrete(data_, best_feature_idx, feature_vals_unique_[best_feature_idx])
+
+            # split the data
+            data_divided = splitData_discrete(data_, best_feature_idx, feature_range_[best_feature_idx])
+            # record used feature
+            feature_used_cur = recordUsedFeature_discrete(feature_used_, best_feature_idx)
 
             # for eachOutcome k of S, create children
-            for i in range(len(feature_range_[best_feature_idx])):
+            numPossibleFeatureValues = len(feature_range_[best_feature_idx])
+            for i in range(numPossibleFeatureValues):
                 # Dk = subset of instances that have outcome k
                 feature_value_cur_ = feature_range_[best_feature_idx][i]
                 data_cur = data_divided[i]
+                if len(data_cur) == 0:
+                    continue
                 parent_ = node
                 child_i = makeSubtree(data_cur, metadata_, classLabels_, classLabelsRange_,
-                                      feature_range_, feature_vals_unique_, feature_used_,
+                                      feature_range_, feature_vals_unique_, feature_used_cur,
                                       feature_value_cur_, parent_)
                 node.setChildren(child_i)
 
@@ -418,22 +489,45 @@ def makeSubtree(data_, metadata_, classLabels_, classLabelsRange_, feature_range
 
 
 def printNode(node):
-    if node.parent == None:
-        name = "ROOT"
-        node.printInfo()
-    else:
-        name = node.feature_val
-        node.printInfo()
+    # if node.parent == None:
+    #     name = "ROOT"
+    #     node.printInfo()
+    # else:
+    #     name = node.feature_val
 
-    if node.isLeaf:
+
+    if node.isTerminalNode():
         label = node.getClassification()
         print label
         print "\n"
-    else:
-        for child in node.getChildren():
-            printNode(child)
+        return
+
+    for child in node.getChildren():
+        if child.isTerminalNode():
+            return
+        print "x"
+        printNode(child)
 
 
+
+# Pretty prints the decision tree
+def print_dtree(root, op_labels, prefix):
+    if root is None:
+        return
+
+    children = root.getChildren()
+
+    for node in children:
+        label_count_display = node.getClassification()
+        display_str = "temp" + " " + node.getParent() + " " + label_count_display
+        if node.isLeaf :
+            display_str += " : " + node.getClassification()
+
+        print display_str
+
+        # Intend the child nodes by a tab and prefix the tab with a pipe separator to link various
+        # values of a feature vertically.
+        print_dtree(node, op_labels, prefix + "|\t")
 
 
 ###################### END OF DEFINITIONS OF HELPER FUNCTIONS ##########################
@@ -460,20 +554,10 @@ parent = None
 root = makeSubtree(data_train, metadata, classLabels, classLabelsRange, feature_range,
             feature_vals_unique, feature_used, feature_val_cur, parent)
 
-#
-# children = root.getChildren()
-# featureName = root.getFeatureName()
-# featureValues = root.getFeatureValue()
 
+# print_dtree(root, "" , "|\t")
 
-# printNode(root)
-
-
-
-# 1  procedure DFS(G,v):
-# 2      label v as discovered
-# 3      for all edges from v to w in G.adjacentEdges(v) do
-# 4          if vertex w is not labeled as discovered then
-# 5              recursively call DFS(G,w)
-
+print "\n\n"
+print "START PRINTING THE TREE:"
+printNode(root)
 
