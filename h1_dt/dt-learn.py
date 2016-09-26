@@ -3,6 +3,7 @@ import scipy.io.arff as sparff
 import scipy as sp
 import sys
 
+
 from decisionTreeNode import decisionTreeNode
 from util import *
 
@@ -424,15 +425,12 @@ def getAllFeatureNames():
     return all_featureNames
 
 
-
 def classify(instance, node):
     prediction = None
     if node.isTerminalNode():
         return node.classification
 
-
     for child in node.children:
-
         featureName = child.getFeatureName()
         featureType = metadata[featureName][0]
         featureIndex = all_featureNames.index(featureName)
@@ -451,13 +449,12 @@ def classify(instance, node):
             # print " %s = %s" % (featureName, child.getFeatureValue())
             if instance[featureIndex] == child.getFeatureValue():
                 prediction = classify(instance, child)
-
-
     return prediction
 
 
-def printTestPerformance(data_test, decisionTree):
-    print "<Predictions for the Test Set Instances>"
+def printTestPerformance(data_test, decisionTree, printResults = False):
+    if printResults:
+        print "<Predictions for the Test Set Instances>"
     correctCount = 0
     numData = len(data_test)
     for i in range(numData):
@@ -466,9 +463,13 @@ def printTestPerformance(data_test, decisionTree):
         y_actual = instance[-1]
         if y_pred == y_actual:
             correctCount +=1
-        print "%d: Actual: %s Predicted: %s" % (i+1, y_actual, y_pred)
-    print "Number of correctly classified: %d Total number of test instances: %d" \
+        if printResults:
+            print "%d: Actual: %s Predicted: %s" % (i+1, y_actual, y_pred)
+    if printResults:
+        print "Number of correctly classified: %d Total number of test instances: %d" \
           % (correctCount, numData)
+    classification_accuracy = 1.0 * correctCount / numData
+    return classification_accuracy
 
 
 ###################### END OF DEFINITIONS OF HELPER FUNCTIONS ##########################
@@ -486,18 +487,95 @@ feature_used = np.zeros((len(metadata.types()) - 1,), dtype=bool)
 classLabelsRange = feature_range[-1]
 all_featureNames = getAllFeatureNames()
 
-# # test
-# printAllFeatures(metadata, feature_range)
-
-# build the tree
+# # build the tree
 feature_val_cur = None
 feature_name = None
-isLeftChild = None
-decisionTree = makeSubtree(data_train, feature_name, feature_used, feature_val_cur)
-# show the tree and print the performance
-printNode(decisionTree)
+# decisionTree = makeSubtree(data_train, feature_name, feature_used, feature_val_cur)
+# # show the tree and print the performance
+# printNode(decisionTree)
 
 
-# # show test set performance
+# # # show test set performance
 data_test, _, _, _= loadData(fname_test)
-printTestPerformance(data_test, decisionTree)
+# printTestPerformance(data_test, decisionTree, True)
+
+
+
+
+
+
+
+
+
+################################ Problem 2 ################################
+# get data
+def getTrainingData_subset(data, proportion):
+    numData = len(data)
+    num_training_data = np.round(proportion * numData)
+    # take a random subet of the training data
+    temp_idx = np.random.choice(numData, num_training_data, replace=False)
+    subset_train_data = []
+    for idx in temp_idx:
+        subset_train_data.append(data[idx])
+    # formatting
+    subset_train_data = np.array(subset_train_data)
+    return subset_train_data
+
+# plot the performance
+import matplotlib.pyplot as plt
+m = 4
+# Plot points for training set sizes that represent 5%, 10%, 20%, 50% and 100% of the instances in
+# each given training file. For each training-set size (except the largest one), randomly draw 10
+# different training sets and evaluate each resulting decision tree model on the test set. For each
+# training set size, plot the average test-set accuracy and the minimum and maximum test-set
+# accuracy. Be sure to label the axes of your plots. Set the stopping criterion m=4 for these
+# experiments.
+
+
+simSize = 10
+prop_training_data = np.array([.05, .1, .2, .5, 1])
+numConditions = len(prop_training_data)
+numData = len(data_train)
+num_training_data = np.round(prop_training_data * numData)
+
+
+# preallocate
+accuracy = np.zeros((simSize, numConditions))
+
+for j in range(simSize):
+    for i in range(numConditions):
+        proportion = prop_training_data[i]
+        subset_data_train = getTrainingData_subset(data_train, proportion)
+        temp_dt = makeSubtree(subset_data_train, feature_name, feature_used, feature_val_cur)
+        accuracy[j,i] = printTestPerformance(data_test, temp_dt)
+
+
+accuracy = np.reshape(range(25), (5,5))
+
+accuracy_mean = np.mean(accuracy, 0)
+accuracy_max = np.amax(accuracy,0)
+accuracy_min = np.amin(accuracy,0)
+
+print accuracy
+print accuracy_mean
+print accuracy_max
+print accuracy_min
+
+plt.plot(range(numConditions), accuracy_mean)
+plt.plot(range(numConditions), accuracy_max)
+plt.plot(range(numConditions), accuracy_min)
+
+plt.xticks(range(numConditions), prop_training_data)
+plt.ylabel('Test set classification accuracy')
+plt.xlabel('Proportionof training data')
+plt.show()
+
+
+
+
+
+################################ Problem 3 ################################
+
+
+
+
