@@ -417,28 +417,43 @@ def printNode(node, depth = 0):
         printNode(child, depth)
 
 
-def classify(instance, decisionTree):
-    print instance
+def getAllFeatureNames():
+    all_featureNames = []
+    for name in metadata.names():
+        all_featureNames.append(name)
+    return all_featureNames
 
 
-    children = decisionTree.children
-    child_i = children[0]
+
+def classify(instance, node):
+    prediction = None
+    if node.isTerminalNode():
+        return node.classification
 
 
-    featureName = child_i.getFeatureName()
-    featureType = metadata[featureName][0]
+    for child in node.children:
 
-    if isNumeric(featureType):
-        if child_i.isLeftChild:
-            print "%s <= %s" % (featureName, child_i.getFeatureValue())
+        featureName = child.getFeatureName()
+        featureType = metadata[featureName][0]
+        featureIndex = all_featureNames.index(featureName)
+
+        if isNumeric(featureType):
+            if child.isLeftChild:
+                # print "%s <= %s" % (featureName, child.getFeatureValue())
+                if instance[featureIndex] <= child.getFeatureValue():
+                    prediction = classify(instance, child)
+
+            else:
+                # print "%s > %s" % (featureName, child.getFeatureValue())
+                if instance[featureIndex] > child.getFeatureValue():
+                    prediction = classify(instance, child)
         else:
-            print "%s > %s" % (featureName, child_i.getFeatureValue())
-    else:
-        print " %s = %s" % (featureName, child_i.getFeatureValue())
+            # print " %s = %s" % (featureName, child.getFeatureValue())
+            if instance[featureIndex] == child.getFeatureValue():
+                prediction = classify(instance, child)
 
 
-
-    return 0
+    return prediction
 
 
 def printTestPerformance(data_test, decisionTree):
@@ -469,6 +484,7 @@ data_train, metadata, feature_range, feature_vals_unique = loadData(fname_train)
 # read some parameters
 feature_used = np.zeros((len(metadata.types()) - 1,), dtype=bool)
 classLabelsRange = feature_range[-1]
+all_featureNames = getAllFeatureNames()
 
 # # test
 # printAllFeatures(metadata, feature_range)
@@ -482,11 +498,6 @@ decisionTree = makeSubtree(data_train, feature_name, feature_used, feature_val_c
 printNode(decisionTree)
 
 
-#
-
 # # show test set performance
 data_test, _, _, _= loadData(fname_test)
-instance = data_test[0]
-
-classify(instance, decisionTree)
-# printTestPerformance(data_test, decisionTree)
+printTestPerformance(data_test, decisionTree)
