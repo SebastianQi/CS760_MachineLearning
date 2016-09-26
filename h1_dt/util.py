@@ -15,15 +15,6 @@ def isNumeric(type_str):
 
 ######################## CHECKER FUNCTIONS ########################
 
-# verify: for all features, all feature values IN feature_range (read from the data)
-# delete before submit!
-def dataChecker(data):
-    for instance in data:
-        for i in xrange(len(instance)):
-            if feature_vals[i] != TYPE_NUMERIC and instance[i] not in feature_vals[i]:
-                print "ERROR: Unrecognizable Feature!"
-    return 0
-
 def printAllFeatures(metadata, feature_vals):
     for i in range(len(feature_vals)):
         if isNumeric(metadata.types()[i]):
@@ -34,7 +25,7 @@ def printAllFeatures(metadata, feature_vals):
 
         print "%d\t%8s\t%s\t%s" % \
               (i, metadata.names()[i], metadata.types()[i], featurevalues)
-        # print "\n"
+    print 70*"-"
 
 ######################## NOT USED FUNCTIONS, TESTERS ########################
 

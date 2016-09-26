@@ -48,6 +48,9 @@ class decisionTreeNode:
     def getUsedFeature(self):
         return self.feature_used
 
+
+
+
     def getFeatureName(self):
         return self.feature_name_belong
 
@@ -57,34 +60,51 @@ class decisionTreeNode:
     def getFeatureValue(self):
         return self.feature_val_belong
 
+    def getFeatureName_split(self):
+        return self.feature_name_split
+
+    def isTerminalNode(self):
+        if self.isLeaf:
+            return True
+        return False
 
     def isRoot(self):
         if self.isRoot:
             return True
         return False
 
+
+
+    def getLabelCounts(self):
+        return self.labelCounts
+
+
+
     # setters
 
     def setToRoot(self, isRoot_):
         self.isRoot = isRoot_
 
-    def setFeature_belong(self, _feature_name, _feature_type, _feature_val):
+    def setFeature_belong(self, _feature_name, _feature_val):
         # check input
         # the feauture splitted by the parent node
         self.feature_name_belong = _feature_name
-        self.feature_type_belong = _feature_type
+        # self.feature_type_belong = _feature_type
         self.feature_val_belong = _feature_val
 
         # if parent nominal, feature val the val of that nominal variable
         # else, it should be None
         # TODO OR if numeric, feature val should be a number, else, it should be None
 
-    def updateUsedFeature(self, feature_used_):
-        self.feature_used = feature_used_
+    def setFeature_name_split(self, feature_name_split_):
+        self.feature_name_split = feature_name_split_
 
     def setFeature_split(self, feature_name_split_, feature_type_split_):
         self.feature_name_split =feature_name_split_
         self.feature_type_split = feature_type_split_
+
+    def updateUsedFeature(self, feature_used_):
+        self.feature_used = feature_used_
 
 
     def setChildren(self, _children):
@@ -102,20 +122,20 @@ class decisionTreeNode:
     def setDepth(self, depth_):
         self.depth = depth_
 
-    def isTerminalNode(self):
-        if self.isLeaf:
-            return True
-        return False
-
 
     def setLabelCounts(self, counts):
         self.labelCounts = counts
 
-    ## other methods
-
-    def printInfo(self):
-
-        # print "%s - %s - %s" % (str(self.feature), str(self.feature_type), str(self.feature_val))
-        print "%s" % (str(self.feature))
-        # print "\t%s" % ()
-
+    # ## other methods
+    #
+    # def printInfo(self):
+    #
+    #     # print "%s - %s - %s" % (str(self.feature), str(self.feature_type), str(self.feature_val))
+    #     if isNumeric(self.feature_type_belong):
+    #         print self.depth*"\t"+"%s = %s" \
+    #                               % (self.feature_name_belong, str(self.feature_val_belong))
+    #     else:
+    #         print self.depth * "\t" + "%s = %s" \
+    #                                   % (self.feature_name_belong,  str(self.feature_val_belong))
+    #     # print "\t%s" % ()
+    #
