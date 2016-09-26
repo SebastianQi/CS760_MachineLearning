@@ -55,7 +55,6 @@ def loadData(data_):
 
 
 def splitData_continuous(data_, featureIdx_, threshold_):
-    data_divided = []
     data_sub_less = []
     data_sub_greater = []
     # loop over all instances
@@ -65,12 +64,7 @@ def splitData_continuous(data_, featureIdx_, threshold_):
             data_sub_less.append(instance)
         else:
             data_sub_greater.append(instance)
-
-    data_divided.append(data_sub_less)
-    data_divided.append(data_sub_greater)
     return [data_sub_less, data_sub_greater]
-    # return data_divided
-
 
 
 def splitData_discrete(data_, featureIdx_, this_feature_range_):
@@ -168,11 +162,11 @@ def findBestThreshold(data_, featureIdx_):
 
 def computeConditionalEntropy(data_, feature_used_):
     # loop over all features
-    nFeatures = len(metadata.types())
-    entropy_YgX = np.zeros((nFeatures-1,))
+    nFeatures = len(metadata.types()-1)
+    entropy_YgX = np.zeros(nFeatures)
     entropy_YgX.fill(np.NaN)
 
-    for i in range(nFeatures - 1):
+    for i in range(nFeatures):
         # skip features that is alread used
         if feature_used_[i]:
             continue
@@ -282,32 +276,27 @@ def getMajorityClass(data_, parent_):
 
 def initTreeNode(data_, feature_name_, feature_used_, feature_val_, parent_, isRoot_, isLeaf,
                  isLeftChild_ = False):
+    # read some attributes
     n_feature_val = feature_val_
     n_feature_used = feature_used_
     n_parent = parent_
-    n_label, counts = getMajorityClass(data_, parent_)
+    n_feature_name = feature_name_
+    n_label, counts = getMajorityClass(data_, n_parent)
 
     # make the node
     node_temp = decisionTreeNode()
-    if isLeaf:
-        # create the root
-        n_feature_name = feature_name_
-        node_temp.setToLeaf()
-
-    else:
-        # create the root
-        n_feature_name = feature_name_
-
-    # make the node
     node_temp.setFeature_belong(n_feature_name, n_feature_val)
     node_temp.updateUsedFeature(n_feature_used)
     node_temp.setParent(n_parent)
 
-    node_temp.setToRoot(isRoot_)
-
+    # set classification data
     node_temp.setClassificationLabel(n_label)
     node_temp.setLabelCounts(counts)
 
+    # set node type
+    node_temp.setToRoot(isRoot_)
+    if isLeaf:
+        node_temp.setToLeaf()
     if isLeftChild_:
         node_temp.setToLeftChild()
     return node_temp
@@ -349,6 +338,7 @@ def makeSubtree(data_, feature_name_belong, feature_used_, feature_val_cur_,
         isLeaf = False
         # pick the best feature
         best_feature_idx = findBestSplit(data_, feature_used_)
+        print infomationGain[best_feature_idx]
 
         # start creating the tree
         node = initTreeNode(data_, feature_name_belong, feature_used_, feature_val_cur_, parent_,
