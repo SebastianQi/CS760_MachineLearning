@@ -11,6 +11,11 @@ def neighbourMean(nparray):
     return np.divide(np.add(nparray[0:-1], nparray[1:]), 2.0)
 
 
-x = range(1,10,1)
-print x
-print neighbourMean(x)
+x = 111.500000
+
+
+val =  "%.6f" % x
+val = str(val)
+print val
+
+

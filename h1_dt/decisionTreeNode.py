@@ -35,6 +35,7 @@ class decisionTreeNode:
         self.classification = classification
         self.labelCounts = np.array(2,)
 
+
     # getters
     def getChildren(self):
         return self.children
@@ -74,16 +75,21 @@ class decisionTreeNode:
         return False
 
 
-
     def getLabelCounts(self):
         return self.labelCounts
 
+
+    def isLeftChild(self):
+        return self.isLeftChild
 
 
     # setters
 
     def setToRoot(self, isRoot_):
         self.isRoot = isRoot_
+
+    def setToLeftChild(self):
+        self.isLeftChild = True
 
     def setFeature_belong(self, _feature_name, _feature_val):
         # check input
