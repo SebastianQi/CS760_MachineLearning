@@ -132,16 +132,3 @@ class decisionTreeNode:
     def setLabelCounts(self, counts):
         self.labelCounts = counts
 
-    # ## other methods
-    #
-    # def printInfo(self):
-    #
-    #     # print "%s - %s - %s" % (str(self.feature), str(self.feature_type), str(self.feature_val))
-    #     if isNumeric(self.feature_type_belong):
-    #         print self.depth*"\t"+"%s = %s" \
-    #                               % (self.feature_name_belong, str(self.feature_val_belong))
-    #     else:
-    #         print self.depth * "\t" + "%s = %s" \
-    #                                   % (self.feature_name_belong,  str(self.feature_val_belong))
-    #     # print "\t%s" % ()
-    #

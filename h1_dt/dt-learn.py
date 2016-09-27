@@ -235,15 +235,7 @@ def findBestSplit(data_, feature_used_):
     return best_feature_index
 
 
-def getMajorityClass(data_, parent_):
-    '''
-    get the majority vote for the current input data set
-    if there is a tie, choose the first class listed in "classLabelsRange"
-    the tie is handled by np.argmax()
-    :param data_: the current data set
-    :param classLabelsRange: all possible values for the class, should be binary
-    :return: the majority vote
-    '''
+def getLabelCounts(data_):
     if not len(classLabelsRange) == 2:
         raise Exception('ERROR:non-binary class detected')
     count1 = 0
@@ -256,16 +248,26 @@ def getMajorityClass(data_, parent_):
             count2 += 1
         else:
             raise Exception('ERROR:un-recognizable class label for the training example')
+    return count1, count2
 
-    # count1, count2 = countPosNegLabels(data_, classLabelsRange)
+def getMajorityClass(data_, parent_):
+    '''
+    get the majority vote for the current input data set
+    if there is a tie, choose the first class listed in "classLabelsRange"
+    the tie is handled by np.argmax()
+    :param data_: the current data set
+    :param classLabelsRange: all possible values for the class, should be binary
+    :return: the majority vote
+    '''
+    count1, count2 = getLabelCounts(data_)
     # return the majority
     if count1 > count2:
         majorityClassLabel = classLabelsRange[0]
     elif count1 < count2:
         majorityClassLabel = classLabelsRange[1]
     else:
-        # if equal, take the majority class for the parent node
         majorityClassLabel = parent_.getClassification()
+
     return majorityClassLabel, [count1, count2]
 
 
@@ -277,7 +279,15 @@ def initTreeNode(data_, feature_name_, feature_used_, feature_val_, parent_, isR
     n_feature_used = feature_used_
     n_parent = parent_
     n_feature_name = feature_name_
-    n_label, counts = getMajorityClass(data_, n_parent)
+    if isRoot_:
+        count1, count2 = getLabelCounts(data_)
+        if count1 >= count2:
+            n_label = classLabelsRange[0]
+        else:
+            n_label = classLabelsRange[1]
+        counts = [count1, count2]
+    else:
+        n_label, counts = getMajorityClass(data_, n_parent)
 
     # make the node
     node_temp = decisionTreeNode()
@@ -473,7 +483,7 @@ def printTestPerformance(data_test, decisionTree, printResults = False):
 
 
 ###################### END OF DEFINITIONS OF HELPER FUNCTIONS ##########################
-
+visualizeResults = 1
 # read input arguments
 fname_train, fname_test, m = processInputArgs()
 # load data
@@ -487,21 +497,18 @@ feature_used = np.zeros((len(metadata.types()) - 1,), dtype=bool)
 classLabelsRange = feature_range[-1]
 all_featureNames = getAllFeatureNames()
 
+
 # # build the tree
 feature_val_cur = None
 feature_name = None
-# decisionTree = makeSubtree(data_train, feature_name, feature_used, feature_val_cur)
-# # show the tree and print the performance
-# printNode(decisionTree)
 
+decisionTree = makeSubtree(data_train, feature_name, feature_used, feature_val_cur)
+# show the tree and print the performance
+printNode(decisionTree)
 
-# # # show test set performance
+# show test set performance
 data_test, _, _, _= loadData(fname_test)
-# printTestPerformance(data_test, decisionTree, True)
-
-
-
-
+printTestPerformance(data_test, decisionTree, True)
 
 
 
@@ -509,7 +516,7 @@ data_test, _, _, _= loadData(fname_test)
 
 ################################ Problem 2 ################################
 # get data
-def getTrainingData_subset(data, proportion):
+def randomSample_fromData(data, proportion):
     numData = len(data)
     num_training_data = np.round(proportion * numData)
     # take a random subet of the training data
@@ -522,60 +529,68 @@ def getTrainingData_subset(data, proportion):
     return subset_train_data
 
 # plot the performance
-import matplotlib.pyplot as plt
-m = 4
-# Plot points for training set sizes that represent 5%, 10%, 20%, 50% and 100% of the instances in
-# each given training file. For each training-set size (except the largest one), randomly draw 10
-# different training sets and evaluate each resulting decision tree model on the test set. For each
-# training set size, plot the average test-set accuracy and the minimum and maximum test-set
-# accuracy. Be sure to label the axes of your plots. Set the stopping criterion m=4 for these
-# experiments.
+if visualizeResults:
+    import matplotlib.pyplot as plt
+    m = 4
+    # Plot points for training set sizes that represent 5%, 10%, 20%, 50% and 100% of the instances in
+    # each given training file. For each training-set size (except the largest one), randomly draw 10
+    # different training sets and evaluate each resulting decision tree model on the test set. For each
+    # training set size, plot the average test-set accuracy and the minimum and maximum test-set
+    # accuracy. Be sure to label the axes of your plots. Set the stopping criterion m=4 for these
+    # experiments.
 
+    simSize = 10
+    prop_training_data = np.array([.05, .1, .2, .5, 1])
+    numConditions = len(prop_training_data)
+    numData = len(data_train)
+    num_training_data = np.round(prop_training_data * numData)
 
-simSize = 10
-prop_training_data = np.array([.05, .1, .2, .5, 1])
-numConditions = len(prop_training_data)
-numData = len(data_train)
-num_training_data = np.round(prop_training_data * numData)
+    # preallocate
+    accuracy = np.zeros((simSize, numConditions))
 
+    for j in range(simSize):
+        for i in range(numConditions):
+            proportion = prop_training_data[i]
+            subset_data_train = randomSample_fromData(data_train, proportion)
+            temp_dt = makeSubtree(subset_data_train, feature_name, feature_used, feature_val_cur)
+            accuracy[j,i] = printTestPerformance(data_test, temp_dt)
+            del temp_dt
 
-# preallocate
-accuracy = np.zeros((simSize, numConditions))
+    # accuracy = np.reshape(range(25), (5,5))
+    accuracy_mean = np.mean(accuracy, 0)
+    accuracy_max = np.amax(accuracy,0)
+    accuracy_min = np.amin(accuracy,0)
 
-for j in range(simSize):
-    for i in range(numConditions):
-        proportion = prop_training_data[i]
-        subset_data_train = getTrainingData_subset(data_train, proportion)
-        temp_dt = makeSubtree(subset_data_train, feature_name, feature_used, feature_val_cur)
-        accuracy[j,i] = printTestPerformance(data_test, temp_dt)
+    plt.figure(1)
+    plt.plot(range(numConditions), accuracy_mean)
+    plt.plot(range(numConditions), accuracy_max)
+    plt.plot(range(numConditions), accuracy_min)
 
-
-accuracy = np.reshape(range(25), (5,5))
-
-accuracy_mean = np.mean(accuracy, 0)
-accuracy_max = np.amax(accuracy,0)
-accuracy_min = np.amin(accuracy,0)
-
-print accuracy
-print accuracy_mean
-print accuracy_max
-print accuracy_min
-
-plt.plot(range(numConditions), accuracy_mean)
-plt.plot(range(numConditions), accuracy_max)
-plt.plot(range(numConditions), accuracy_min)
-
-plt.xticks(range(numConditions), prop_training_data)
-plt.ylabel('Test set classification accuracy')
-plt.xlabel('Proportionof training data')
-plt.show()
+    plt.xticks(range(numConditions), prop_training_data)
+    plt.title('%s' % fname_test)
+    plt.ylabel('Test set classification accuracy')
+    plt.xlabel('Proportion of training data')
+    plt.show()
 
 
 
+    ################################ Problem 3 ################################
+    # For this part, you will investigate how predictive accuracy varies as a function of tree size.
+    # Using the entire training set. Plot curves showing how test-set accuracy varies with the
+    # value m used in the stopping criteria.
+    # Show points for m = 2, 5, 10 and 20. Be sure to label the axes of your plots.
+    parameters = np.array([2,5,10,20])
+    accuracy = np.zeros((len(parameters),))
+    for i in range(len(parameters)):
+        m = parameters[i]
+        temp_dt = makeSubtree(data_train, feature_name, feature_used, feature_val_cur)
+        accuracy[i] = printTestPerformance(data_test, temp_dt)
 
+    plt.figure(2)
+    plt.plot(range(len(parameters)), accuracy)
 
-################################ Problem 3 ################################
-
-
-
-
+    plt.xticks(range(len(parameters)), parameters)
+    plt.title('%s' % fname_test)
+    plt.ylabel('Test set classification accuracy')
+    plt.xlabel('m')
+    plt.show()
