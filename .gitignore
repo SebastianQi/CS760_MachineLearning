@@ -6,7 +6,9 @@
 *.iml
 *.xml
 *.pyc
-
+*.gz
+*.aux
+*.log
 
 
 h1_dt/dtlearn_git.py
