@@ -3,7 +3,6 @@ import scipy.io.arff as sparff
 import scipy as sp
 import sys
 
-
 from decisionTreeNode import decisionTreeNode
 from util import *
 
@@ -165,16 +164,16 @@ def findBestThreshold(data_, featureIdx_):
 def computeConditionalEntropy(data_, feature_used_):
     # loop over all features
     nFeatures = len(metadata.types())-1
+    # preallocate
     entropy_YgX = np.zeros(nFeatures)
     entropy_YgX.fill(np.NaN)
-
     for i in range(nFeatures):
         # skip features that is alread used
         if feature_used_[i]:
             continue
         # condition 1: numeric feature
         if isNumeric(metadata.types()[i]):
-            entropy, bestThreshold_idx = findBestThreshold(data_, i)
+            entropy, _ = findBestThreshold(data_, i)
 
         # condition 2: nominal feature
         else:
@@ -308,21 +307,17 @@ def initTreeNode(data_, feature_name_, feature_used_, feature_val_, parent_, isR
     return node_temp
 
 
-def recordUsedFeature_discrete(feature_used_, best_feature_idx_):
-    # if the input feature is discrete, then we can nolonger split on it
-    if not isNumeric(metadata.types()[best_feature_idx_]):
-        feature_used_[best_feature_idx_] = True
+def recordUsedFeautre(data_, best_feature_idx_, feature_used_):
+    # for continuous valued feature
+    if isNumeric(metadata.types()[best_feature_idx_]):
+        list = []
+        for instance in data_:
+            list.append(instance[best_feature_idx_])
+        list = set(list)
+        if len(list) == 1:
+            feature_used_[best_feature_idx_] = True
+    # for discrete feature
     else:
-        raise Exception('The feature is continuous')
-    return feature_used_
-
-
-def recordUsedFeature_continuous(data_,best_feature_idx_,feature_used_):
-    list = []
-    for instance in data_:
-        list.append(instance[best_feature_idx_])
-    list = set(list)
-    if len(list) == 1:
         feature_used_[best_feature_idx_] = True
     return feature_used_
 
@@ -334,16 +329,16 @@ def makeSubtree(data_, feature_name_belong, feature_used_, feature_val_cur_,
     infomationGain = computInfoGain(data_, feature_used_)
 
     if stoppingGrowing(data_, infomationGain, feature_used_):
-        # make a leaf node N
+        # make a terminal node
         isLeaf = True
-        leaf = initTreeNode(data_, feature_name_belong, feature_used_, feature_val_cur_, parent_,
+        return initTreeNode(data_, feature_name_belong, feature_used_, feature_val_cur_, parent_,
                             isRoot_, isLeaf, isLeftChild_)
-        return leaf
-
     else:
         isLeaf = False
         # pick the best feature
         best_feature_idx = findBestSplit(data_, feature_used_)
+        if m == 0:
+            feature_used_ = recordUsedFeautre(data_, best_feature_idx, feature_used_)
 
         # start creating the tree
         node = initTreeNode(data_, feature_name_belong, feature_used_, feature_val_cur_, parent_,
@@ -450,7 +445,6 @@ def classify(instance, node):
                 # print "%s <= %s" % (featureName, child.getFeatureValue())
                 if instance[featureIndex] <= child.getFeatureValue():
                     prediction = classify(instance, child)
-
             else:
                 # print "%s > %s" % (featureName, child.getFeatureValue())
                 if instance[featureIndex] > child.getFeatureValue():
@@ -489,7 +483,6 @@ fname_train, fname_test, m = processInputArgs()
 # load data
 # feature_range [tuple] = the possible values for discrete feature, None for continous
 # feature_vals_unique [list] = the observed values for all features
-# columns [list] = the actual feature vector from data_train
 data_train, metadata, feature_range, feature_vals_unique = loadData(fname_train)
 
 # read some parameters
@@ -497,8 +490,7 @@ feature_used = np.zeros((len(metadata.types()) - 1,), dtype=bool)
 classLabelsRange = feature_range[-1]
 all_featureNames = getAllFeatureNames()
 
-
-# # build the tree
+# build the tree
 feature_val_cur = None
 feature_name = None
 
@@ -512,85 +504,74 @@ printTestPerformance(data_test, decisionTree, True)
 
 
 
-
-
-################################ Problem 2 ################################
-# get data
-def randomSample_fromData(data, proportion):
-    numData = len(data)
-    num_training_data = np.round(proportion * numData)
-    # take a random subet of the training data
-    temp_idx = np.random.choice(numData, num_training_data, replace=False)
-    subset_train_data = []
-    for idx in temp_idx:
-        subset_train_data.append(data[idx])
-    # formatting
-    subset_train_data = np.array(subset_train_data)
-    return subset_train_data
-
-# plot the performance
-if visualizeResults:
-    import matplotlib.pyplot as plt
-    m = 4
-    # Plot points for training set sizes that represent 5%, 10%, 20%, 50% and 100% of the instances in
-    # each given training file. For each training-set size (except the largest one), randomly draw 10
-    # different training sets and evaluate each resulting decision tree model on the test set. For each
-    # training set size, plot the average test-set accuracy and the minimum and maximum test-set
-    # accuracy. Be sure to label the axes of your plots. Set the stopping criterion m=4 for these
-    # experiments.
-
-    simSize = 10
-    prop_training_data = np.array([.05, .1, .2, .5, 1])
-    numConditions = len(prop_training_data)
-    numData = len(data_train)
-    num_training_data = np.round(prop_training_data * numData)
-
-    # preallocate
-    accuracy = np.zeros((simSize, numConditions))
-
-    for j in range(simSize):
-        for i in range(numConditions):
-            proportion = prop_training_data[i]
-            subset_data_train = randomSample_fromData(data_train, proportion)
-            temp_dt = makeSubtree(subset_data_train, feature_name, feature_used, feature_val_cur)
-            accuracy[j,i] = printTestPerformance(data_test, temp_dt)
-            del temp_dt
-
-    # accuracy = np.reshape(range(25), (5,5))
-    accuracy_mean = np.mean(accuracy, 0)
-    accuracy_max = np.amax(accuracy,0)
-    accuracy_min = np.amin(accuracy,0)
-
-    plt.figure(1)
-    plt.plot(range(numConditions), accuracy_mean)
-    plt.plot(range(numConditions), accuracy_max)
-    plt.plot(range(numConditions), accuracy_min)
-
-    plt.xticks(range(numConditions), prop_training_data)
-    plt.title('%s' % fname_test)
-    plt.ylabel('Test set classification accuracy')
-    plt.xlabel('Proportion of training data')
-    plt.show()
-
-
-
-    ################################ Problem 3 ################################
-    # For this part, you will investigate how predictive accuracy varies as a function of tree size.
-    # Using the entire training set. Plot curves showing how test-set accuracy varies with the
-    # value m used in the stopping criteria.
-    # Show points for m = 2, 5, 10 and 20. Be sure to label the axes of your plots.
-    parameters = np.array([2,5,10,20])
-    accuracy = np.zeros((len(parameters),))
-    for i in range(len(parameters)):
-        m = parameters[i]
-        temp_dt = makeSubtree(data_train, feature_name, feature_used, feature_val_cur)
-        accuracy[i] = printTestPerformance(data_test, temp_dt)
-
-    plt.figure(2)
-    plt.plot(range(len(parameters)), accuracy)
-
-    plt.xticks(range(len(parameters)), parameters)
-    plt.title('%s' % fname_test)
-    plt.ylabel('Test set classification accuracy')
-    plt.xlabel('m')
-    plt.show()
+# ################################ Problem 2 ################################
+# # get data
+# def randomSample_fromData(data, proportion):
+#     numData = len(data)
+#     num_training_data = np.round(proportion * numData)
+#     # take a random subet of the training data
+#     temp_idx = np.random.choice(numData, num_training_data, replace=False)
+#     subset_train_data = []
+#     for idx in temp_idx:
+#         subset_train_data.append(data[idx])
+#     # formatting
+#     subset_train_data = np.array(subset_train_data)
+#     return subset_train_data
+#
+# # plot the performance
+# if visualizeResults:
+#     import matplotlib.pyplot as plt
+#     m = 4
+#     # Plot points for training set sizes that represent 5%, 10%, 20%, 50% and 100% of the instances in
+#     # each given training file. For each training-set size (except the largest one), randomly draw 10
+#     # different training sets and evaluate each resulting decision tree model on the test set. For each
+#     # training set size, plot the average test-set accuracy and the minimum and maximum test-set
+#     # accuracy. Be sure to label the axes of your plots. Set the stopping criterion m=4 for these
+#     # experiments.
+#
+#     simSize = 10
+#     prop_training_data = np.array([.05, .1, .2, .5, 1])
+#     numConditions = len(prop_training_data)
+#
+#     accuracy = np.zeros((simSize, numConditions))
+#     for j in range(simSize):
+#         for i in range(numConditions):
+#             proportion = prop_training_data[i]
+#             # take uniform random sample without replacement, from the training data
+#             subset_data_train = randomSample_fromData(data_train, proportion)
+#             # build and test tree
+#             temp_dt = makeSubtree(subset_data_train, feature_name, feature_used, feature_val_cur)
+#             accuracy[j,i] = printTestPerformance(data_test, temp_dt)
+#             del temp_dt
+#
+#     plt.figure(1)
+#     plt.plot(range(numConditions), np.mean(accuracy, 0))
+#     plt.plot(range(numConditions), np.amax(accuracy,0))
+#     plt.plot(range(numConditions), np.amin(accuracy,0))
+#
+#     plt.xticks(range(numConditions), prop_training_data)
+#     plt.title('%s' % fname_test)
+#     plt.ylabel('Test set classification accuracy')
+#     plt.xlabel('Proportion of training data')
+#     plt.show()
+#
+#     ################################ Problem 3 ################################
+#     # For this part, you will investigate how predictive accuracy varies as a function of tree size.
+#     # Using the entire training set. Plot curves showing how test-set accuracy varies with the
+#     # value m used in the stopping criteria.
+#     # Show points for m = 2, 5, 10 and 20. Be sure to label the axes of your plots.
+#     parameters = np.array([2,5,10,20])
+#     accuracy = np.zeros((len(parameters),))
+#     for i in range(len(parameters)):
+#         m = parameters[i]
+#         temp_dt = makeSubtree(data_train, feature_name, feature_used, feature_val_cur)
+#         accuracy[i] = printTestPerformance(data_test, temp_dt)
+#
+#     plt.figure(2)
+#     plt.plot(range(len(parameters)), accuracy)
+#
+#     plt.xticks(range(len(parameters)), parameters)
+#     plt.title('%s' % fname_test)
+#     plt.ylabel('Test set classification accuracy')
+#     plt.xlabel('m')
+#     plt.show()

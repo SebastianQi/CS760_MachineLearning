@@ -49,20 +49,36 @@
 \maketitle % Print the title
 
 
+\section*{Question1}
+Code: 
+\begin{itemize}
+  \item dt-learn.py: the main program that implements the ID3  decision tree algorihtm 
+  \item util.py: the definitions of some constants
+  \item decisionTreeNode.py: the definition of the tree node class 
+\end{itemize}
+ 
+\hfill 
 
-%----------------------------------------------------------------------------------------
-%	PROBLEM 2
-%----------------------------------------------------------------------------------------
+Dependencies: 
+\begin{itemize}
+  \item pyhton 2.7 
+  \item numpy 
+  \item scipy 
+  \item sys
+\end{itemize}
+
 
 \section*{Question2}
 
+
 \begin{center}
-\includegraphics[scale=.4]{pics/heart_acc_data.png}
+\includegraphics[scale=.5]{pics/heart_acc_data.png}
 \end{center}
 \begin{center}
-\includegraphics[scale=.4]{pics/diabetes_acc_data.png}
+\includegraphics[scale=.5]{pics/diabetes_acc_data.png}
 \end{center}
 
+Here are the learning curve: the performance,  measured in terms of classification accuracy,  against the amount of training data used when constructing the decision tree. In general, the performance is increasing as more training data were supplied. This trend holds for both of the data sets we explored. 
 
 \newpage
 
@@ -79,5 +95,7 @@
 \begin{center}
 \includegraphics[scale=.5]{pics/diabetes_acc_m.png}
 \end{center}
+
+As we increase m, the classification accuracy increases for both data sets. It shows that, as we had no pruning, the decision tree tends to overfit the training data. And by early stopping (increase m), we obtain a simpler tree which tends to ameliorate the overfitting issue. 
 
 \end{document}

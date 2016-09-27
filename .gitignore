@@ -9,6 +9,6 @@
 *.gz
 *.aux
 *.log
-
+h1_dt/submit/*
 
 h1_dt/dtlearn_git.py
