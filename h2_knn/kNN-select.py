@@ -23,7 +23,7 @@ accuracy_tune = np.mean(hits_tune,1)
 bestK = Ks[np.argmax(accuracy_tune)]
 
 # fit final model with the best K
-accuracy_test = testModel(X_train, Y_train, X_test, Y_test, Y_range, bestK)
+error_test = testModel(X_train, Y_train, X_test, Y_test, Y_range, bestK)
 
 
 # ##

@@ -10,4 +10,4 @@ X_train, Y_train, metadata = loadData(fname_train)
 X_test, Y_test, _ = loadData(fname_test)
 Y_range = metadata[metadata.names()[-1]][1]
 
-accuracy = testModel(X_train, Y_train, X_test, Y_test, Y_range, K)
+error_test = testModel(X_train, Y_train, X_test, Y_test, Y_range, K)
