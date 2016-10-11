@@ -38,13 +38,13 @@ def kNN_classify_l2(x_test, X_train, Y_train, Y_range, K):
 def testModel(X_train, Y_train, X_test, Y_test, Y_range, K, printResults = True):
     print('Parameter: K = %d' % K)
     count = 0
-    mae = 0
+    mean_abs_error = 0
     # predict y, for all rows in X_Test
     for n in range(X_test.shape[0]):
         Y_predict = kNN_classify_l2(X_test[n,], X_train, Y_train, Y_range, K)
         # for regression, aggregate mean absolute error
         if Y_range == None:
-            mae += sum(abs(Y_predict - Y_test[n]))
+            mean_abs_error += sum(abs(Y_predict - Y_test[n]))
         # for binary classification, aggregate the count of correctly classified instance
         else:
             if Y_predict == Y_test[n]:
@@ -53,14 +53,13 @@ def testModel(X_train, Y_train, X_test, Y_test, Y_range, K, printResults = True)
         if printResults:
             print('%d: Actual: %s Predicted: %s' %(n+1, Y_test[n], Y_predict))
 
-
     if Y_range == None:
-        print('Cumulative MAE = ' % mae)
-        return mae
+        print('Cumulative MAE = ' % mean_abs_error)
+        return 1.0 * mean_abs_error / len(Y_test)
     else:
         print('Number of correctly classified: %d Total number of test instances: %d'
           % (count,len(Y_test)))
-        error = 1 - 1.0*count/len(Y_test)
+        error = 1 - 1.0 * count/len(Y_test)
         return error
 
 
@@ -68,7 +67,8 @@ def tuneModel_loov(X_train, Y_train, x_test, y_test, Y_range, K):
     y_predict = kNN_classify_l2(x_test, X_train, Y_train, Y_range, K)
     # for regression, return true or false
     if Y_range == None:
-        return sum(abs(y_predict - y_test))
+        abs_error = sum(abs(y_predict - y_test))
+        return abs_error
     # for binary classification case, return mean absolute error
     else:
         if y_predict == y_test:
