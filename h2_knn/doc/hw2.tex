@@ -6,7 +6,6 @@
 \usepackage{fourier} % Use the Adobe Utopia font for the document - comment this line to return to the LaTeX default
 \usepackage[english]{babel} % English language/hyphenation
 \usepackage{amsmath,amsfonts,amsthm} % Math packages
-\usepackage{lipsum} % Used for inserting dummy 'Lorem ipsum' text into the template
 \usepackage{sectsty} % Allows customizing section commands
 \allsectionsfont{\centering \normalfont\scshape} % Make all sections centered, the default font and small caps
 \usepackage{fancyhdr} % Custom headers and footers
@@ -49,26 +48,54 @@
 
 \maketitle % Print the title
 
+\section*{Question1}
+Code: 
+\begin{itemize}
+	\item kNN\_alg.py: the main program that implements the standard kNN for multi-class classification and regression 
+	\item util.py: the definitions of some constants and helper functions 
+	\item kNN.py: run kNN algorithm, return test results
+	\item kNN-select.py: run kNN algorithm, tune K by leave-one-out validation. Fit final model with the best K and return the test results 
+\end{itemize}
+ 
+\hfill 
+
+Dependencies: 
+\begin{itemize}
+  \item pyhton 2.7 
+  \item numpy 
+  \item scipy 
+  \item sys
+\end{itemize}
+
+
+
 %----------------------------------------------------------------------------------------
 %	PROBLEM 2
 %----------------------------------------------------------------------------------------
-
+\newpage
 \section*{Question2}
 
 \textbf{For the yeast data set, draw a plot showing how test-set accuracy varies as a function of k. Your plot should show accuracy for k = 1, 5, 10, 20, 30.}
 \begin{center}
-\includegraphics[scale=.5]{pics/hw2_2_1.png}
+\includegraphics[scale=.55]{pics/hw2_2_1.png}
+\end{center}
+
+\textbf{For the wine data, draw a similar plot showing test-set mean absolute error as a function of k, for k = 1, 2, 3, 5, 10.}
+\begin{center}
+\includegraphics[scale=.55]{pics/hw2_2_2.png}
 \end{center}
 
 
 \newpage
+\textbf{For the yeast data set, construct confusion matrices for the k = 1 and k = 30 test-set results. Show these confusion matrices and briefly discuss what the matrices tell you about the effect of k on the misclassifications.}
 
-\textbf{For the wine data, draw a similar plot showing test-set mean absolute error as a function of k, for k = 1, 2, 3, 5, 10.}
 \begin{center}
-\includegraphics[scale=.5]{pics/hw2_2_2.png}
+\includegraphics[scale=.6]{pics/hw2_2_3_1.png}
 \end{center}
 
-\textbf{For the yeast data set, construct confusion matrices for the k = 1 and k = 30 test-set results. Show these confusion matrices and briefly discuss what the matrices tell you about the effect of k on the misclassifications.}
+\begin{center}
+\includegraphics[scale=.6]{pics/hw2_2_3_2.png}
+\end{center}
 
 %----------------------------------------------------------------------------------------
 %	PROBLEM 3
