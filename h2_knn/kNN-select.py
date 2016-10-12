@@ -23,16 +23,4 @@ accuracy_tune = np.mean(hits_tune,1)
 bestK = Ks[np.argmax(accuracy_tune)]
 
 # fit final model with the best K
-error_test = testModel(X_train, Y_train, X_test, Y_test, Y_range, bestK)
-
-
-# ##
-# import matplotlib.pyplot as plt
-# plt.figure(1)
-# plt.plot(Ks, accuracy)
-#
-# plt.title('%s' % fname_test)
-# plt.ylabel('Test set classification accuracy')
-# plt.xlabel('K')
-# plt.show()
-
+testModel(X_train, Y_train, X_test, Y_test, Y_range, bestK)
