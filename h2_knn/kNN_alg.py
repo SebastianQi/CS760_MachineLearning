@@ -10,14 +10,12 @@ def getMajorityClass(Y_predicted, Y_range, nearest_label):
     for y_pred in Y_predicted:
         counts[y_pred] += 1
 
-    # # return the majority vote
+    # return the majority vote
     majorityVotes = [k for k, val in counts.items() if val == max(counts.values())]
     if len(majorityVotes) > 1:
         return nearest_label
     else:
         return majorityVotes[0]
-
-
 
 def kNN_classify_l2(x_test, X_train, Y_train, Y_range, K):
     N_train = X_train.shape[0]
@@ -39,7 +37,7 @@ def kNN_classify_l2(x_test, X_train, Y_train, Y_range, K):
 
 
 def testModel(X_train, Y_train, X_test, Y_test, Y_range, K, printResults = True):
-    print('Parameter: K = %d' % K)
+    print('k value : %d' % K)
     count = 0
     mean_abs_error = 0
     Y_HAT = []
@@ -56,16 +54,21 @@ def testModel(X_train, Y_train, X_test, Y_test, Y_range, K, printResults = True)
                 count += 1
 
         if printResults:
-            print('%d: Actual: %s Predicted: %s' % (n+1, Y_test[n], Y_hat))
+            if Y_range == None:
+                print('Predicted value : %.6f\tActual value : %.6f' % (Y_hat, Y_test[n]))
+            else:
+                print('Predicted value : %s\tActual value : %s' % (Y_hat, Y_test[n]))
 
     if Y_range == None:
         mean_abs_error = 1.0 * mean_abs_error / len(Y_test)
-        print('MAE = %f' % mean_abs_error)
-        return mean_abs_error
+        print('Mean absolute error : %.16f' % mean_abs_error)
+        print('Total number of instances : %d' % len(Y_test))
+        return mean_abs_error, Y_HAT
     else:
-        print('Number of correctly classified: %d Total number of test instances: %d'
-          % (count, len(Y_test)))
         accuracy = 1.0 * count / len(Y_test)
+        print('Number of correctly classified instances : %d ' % (count))
+        print('Total number of instances : %d' % len(Y_test))
+        print('Accuracy : %.16f' % accuracy)
         return accuracy, Y_HAT
 
 

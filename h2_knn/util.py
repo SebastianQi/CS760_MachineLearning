@@ -2,11 +2,6 @@ import numpy as np
 import scipy.io.arff as sparff
 import sys
 
-TYPE_NOMINAL = 'nominal'
-TYPE_NUMERIC = 'numeric'
-NAME_RESPONSE = 'response'
-
-
 def processInputArgs_kNN():
     numArgs = 3
     # process input arguments
@@ -45,7 +40,6 @@ def loadData(data_):
             X[n,m] = data[n][m]
         Y.append(data[n][M])
     return X, np.array(Y), metadata
-
 
 
 def showDataInfo(metadata):

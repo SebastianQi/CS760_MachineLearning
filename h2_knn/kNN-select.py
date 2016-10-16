@@ -1,4 +1,3 @@
-import numpy as np
 from kNN_alg import *
 from util import *
 
