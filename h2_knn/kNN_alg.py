@@ -1,21 +1,20 @@
 import numpy as np
+from collections import OrderedDict
 import sys
 
 def getMajorityClass(Y_predicted, Y_range, nearest_label):
-    # initialize the counts
-    counts = {}
+    # initialize the counts in a ordered dictionary
+    counts = []
     for y_label in Y_range:
-        counts[y_label] = 0
+        counts.append((y_label,0))
+    counts = OrderedDict(counts)
     # accumulate the counts
     for y_pred in Y_predicted:
         counts[y_pred] += 1
-
     # return the majority vote
-    majorityVotes = [k for k, val in counts.items() if val == max(counts.values())]
-    if len(majorityVotes) > 1:
-        return nearest_label
-    else:
-        return majorityVotes[0]
+    majVoteClass = max(counts, key=counts.get)
+    return majVoteClass
+
 
 def kNN_classify_l2(x_test, X_train, Y_train, Y_range, K):
     N_train = X_train.shape[0]
