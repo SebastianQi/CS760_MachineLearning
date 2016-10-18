@@ -23,7 +23,7 @@ def processInputArgs_kNN_select():
         [K1, K2, K3] = [int(str(sys.argv[3])), int(str(sys.argv[4])), int(str(sys.argv[5]))]
     else:
         sys.exit('ERROR: This program takes input arguments in the following way: '
-                 '\n\tkNN-select <train-set-file> <test-set-file> k1 k2 k3')
+                 '\n\tpython kNN-select.py <train-set-file> <test-set-file> k1 k2 k3')
     return fname_train, fname_test, [K1, K2, K3]
 
 def loadData(data_):
@@ -47,5 +47,3 @@ def showDataInfo(metadata):
     for m in range(M):
         print("X_%d = <%s>" % (m, metadata.names()[m]))
     print ("Y = <%s> is <%s>" % (metadata.names()[-1], metadata.types()[-1]))
-
-
