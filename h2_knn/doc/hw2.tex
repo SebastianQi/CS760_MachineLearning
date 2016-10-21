@@ -114,20 +114,21 @@ Dependencies:
 
 
 \begin{center}
-    \begin{tabular}{ | l | l | l | p{6cm} |}
+    \begin{tabular}{| l | l | l | l | p{6cm} |}
     \hline
-    Distance & Best Distance & Best Node & Priority Queue \\ \hline
-    Monday & 11C & 22C & A clear day with lots of sunshine.  
-    However, the strong breeze will bring down the temperatures. \\ \hline
-    
-    Tuesday & 9C & 19C & Cloudy with rain, across many northern regions. 	Clear spells across most of Scotland and Northern Ireland, 
-    but rain reaching the far northwest. \\ \hline
-    
-    Wednesday & 10C & 21C & Rain will still linger for the morning. 
-    Conditions will improve by early afternoon and continue 
-    throughout the evening. \\
+    Action & Distance & Best Distance & Best Node & Priority Queue \\ 
+    \hline    
+    NA & $\infty$ & $\infty$ & NA & (f, 0) \\ 
+    \hline    
+    Pop f & 8 & 8 & f & (h, 0) (c, 1) \\ 
+    \hline    
+    Pop h & 8 & 10 & f & (i, 0) (c, 1) (g, 5)  \\
+    \hline
+    Pop i & 3 & 3 & i & (c, 1) (j, 3) (g, 5) \\
+    \hline
+    Pop c & 2 & 2 & c & (j, 3) (g, 5) \\
     \hline
     \end{tabular}
 \end{center}
-
+Therefore, the algorithm returns the node c. 
 \end{document}
