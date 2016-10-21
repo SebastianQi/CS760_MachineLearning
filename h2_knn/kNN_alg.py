@@ -1,7 +1,6 @@
 import numpy as np
 from collections import OrderedDict
 import scipy.io.arff as sparff
-import sys
 
 def loadData(data_):
     # read the training data
@@ -16,7 +15,6 @@ def loadData(data_):
             X[n,m] = data[n][m]
         Y.append(data[n][M])
     return X, np.array(Y), metadata
-
 
 def getMajorityClass(Y_predicted, Y_range):
     # initialize the counts in a ordered dictionary
@@ -50,29 +48,15 @@ def findKSmallest(distances, K):
             firstIter = False
         else:
             copy = np.delete(copy, min_idx, 0)
-
         min_idx = np.argmin(copy[:, 1])
-
         list.append(copy[min_idx, 0].astype(int))
-
     return list
 
 def kNN_classify_l2(x_test, X_train, Y_train, Y_range, K):
-
     distances = computeDistances_l2(x_test, X_train)
-    # distances = np.round(distances, 18)
+    # find k smallest indices
     idx_k = findKSmallest(distances, K)
-    # # find k smallest indices
     # idx_k = distances.argsort()[:K]
-
-    tempdist = distances[idx_k]
-    templabel = Y_train[idx_k]
-
-    moreidxs = distances.argsort()[:4]
-    moredists = distances[moreidxs]
-    more_equal = moredists[2] == moredists[3]
-    morelabels = Y_train[moreidxs]
-
     # for regression, return local average | for binary classification  return majority vote
     if Y_range == None:
         return np.mean(Y_train[idx_k])
@@ -120,7 +104,6 @@ def testModel(X_train, Y_train, X_test, Y_test, Y_range, K, printResults = True)
     else:
         return count, Y_HAT
 
-
 def tuneModel_loov(X, Y, idx_loocv, Y_range, K):
     # leave one out
     x_test = X[idx_loocv, :]
@@ -134,4 +117,3 @@ def tuneModel_loov(X, Y, idx_loocv, Y_range, K):
         return abs(y_predict - y_test)
     else:
         return y_predict == y_test
-

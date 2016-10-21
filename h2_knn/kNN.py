@@ -1,4 +1,3 @@
-import sys
 from util import *
 from kNN_alg import *
 
