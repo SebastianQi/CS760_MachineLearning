@@ -39,13 +39,31 @@ def computeDistances_l2(x_test, X_train):
         distances[n] = np.linalg.norm(x_test - X_train[n,:])
     return distances
 
+def findKSmallest(distances, K):
+    distances = np.column_stack((range(len(distances)), distances))
+    list = []
+    copy = distances
+    min_idx = []
+    firstIter = True
+    while len(list) < K:
+        if firstIter:
+            firstIter = False
+        else:
+            copy = np.delete(copy, min_idx, 0)
+
+        min_idx = np.argmin(copy[:, 1])
+
+        list.append(copy[min_idx, 0].astype(int))
+
+    return list
+
 def kNN_classify_l2(x_test, X_train, Y_train, Y_range, K):
 
     distances = computeDistances_l2(x_test, X_train)
     # distances = np.round(distances, 18)
-
-    # find k smallest indices
-    idx_k = distances.argsort()[:K]
+    idx_k = findKSmallest(distances, K)
+    # # find k smallest indices
+    # idx_k = distances.argsort()[:K]
 
     tempdist = distances[idx_k]
     templabel = Y_train[idx_k]
