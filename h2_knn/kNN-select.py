@@ -38,6 +38,6 @@ if Y_range == None:
     print('Total number of instances : %d' % len(Y_test))
 else:
     accuracy = 1.0 * performance / len(Y_test)
-    print('Number of correctly classified instances : %d ' % (performance))
+    print('Number of correctly classified instances : %d' % (performance))
     print('Total number of instances : %d' % len(Y_test))
     print('Accuracy : %.16f' % accuracy)

@@ -1,6 +1,22 @@
 import numpy as np
 from collections import OrderedDict
+import scipy.io.arff as sparff
 import sys
+
+def loadData(data_):
+    # read the training data
+    data, metadata = sparff.loadarff(data_)
+    M = len(metadata.names()) - 1
+    N = len(data)
+    # convert data into a matrix form
+    X = np.empty((N, M))
+    Y = []
+    for n in range(N):
+        for m in range(M):
+            X[n,m] = data[n][m]
+        Y.append(data[n][M])
+    return X, np.array(Y), metadata
+
 
 def getMajorityClass(Y_predicted, Y_range):
     # initialize the counts in a ordered dictionary
@@ -15,22 +31,35 @@ def getMajorityClass(Y_predicted, Y_range):
     majVoteClass = max(counts, key=counts.get)
     return majVoteClass
 
-def kNN_classify_l2(x_test, X_train, Y_train, Y_range, K):
+def computeDistances_l2(x_test, X_train):
     N_train = X_train.shape[0]
     distances = np.zeros(N_train,)
-    # compute d(x_test, X_train), where d is l2 distance function
+    # # compute d(x_test, X_train), where d is l2 distance function
     for n in range(N_train):
         distances[n] = np.linalg.norm(x_test - X_train[n,:])
+    return distances
+
+def kNN_classify_l2(x_test, X_train, Y_train, Y_range, K):
+
+    distances = computeDistances_l2(x_test, X_train)
+    # distances = np.round(distances, 18)
+
     # find k smallest indices
     idx_k = distances.argsort()[:K]
 
+    tempdist = distances[idx_k]
+    templabel = Y_train[idx_k]
+
+    moreidxs = distances.argsort()[:4]
+    moredists = distances[moreidxs]
+    more_equal = moredists[2] == moredists[3]
+    morelabels = Y_train[moreidxs]
+
+    # for regression, return local average | for binary classification  return majority vote
     if Y_range == None:
-        # for regression, average k nearst elements
-        prediction = np.mean(Y_train[idx_k])
+        return np.mean(Y_train[idx_k])
     else:
-        # for binary classification  get majority vote for K nearst neighbours
-        prediction = getMajorityClass(Y_train[idx_k], Y_range)
-    return prediction
+        return getMajorityClass(Y_train[idx_k], Y_range)
 
 
 def testModel(X_train, Y_train, X_test, Y_test, Y_range, K, printResults = True):
@@ -50,6 +79,7 @@ def testModel(X_train, Y_train, X_test, Y_test, Y_range, K, printResults = True)
     Y_HAT = []
     # predict y, for all rows in X_Test
     for n in range(len(Y_test)):
+        y_test_cur = Y_test[n]
         Y_hat = kNN_classify_l2(X_test[n,], X_train, Y_train, Y_range, K)
         Y_HAT.append(Y_hat)
         # for regression, aggregate mean absolute error
@@ -57,7 +87,8 @@ def testModel(X_train, Y_train, X_test, Y_test, Y_range, K, printResults = True)
             mean_abs_error += abs(Y_hat - Y_test[n])
         # for binary classification, aggregate the count of correctly classified instance
         else:
-            if Y_hat == Y_test[n]: count += 1
+            if Y_hat == Y_test[n]:
+                count += 1
 
         if printResults:
             if Y_range == None:
@@ -71,18 +102,18 @@ def testModel(X_train, Y_train, X_test, Y_test, Y_range, K, printResults = True)
     else:
         return count, Y_HAT
 
-def tuneModel_loov(X, Y, idx_del, Y_range, K):
-    # compute the predition
-    x_test = X[idx_del, :]
-    y_test = Y[idx_del]
-    X_train = np.delete(X, idx_del, 0)
-    Y_train = np.delete(Y, idx_del)
-    y_predict = kNN_classify_l2(x_test, X_train, Y_train, Y_range, K)
 
+def tuneModel_loov(X, Y, idx_loocv, Y_range, K):
+    # leave one out
+    x_test = X[idx_loocv, :]
+    y_test = Y[idx_loocv]
+    X_train = np.delete(X, idx_loocv, 0)
+    Y_train = np.delete(Y, idx_loocv)
+    # compute the predition
+    y_predict = kNN_classify_l2(x_test, X_train, Y_train, Y_range, K)
+    # for regression, return MAE | for binary classification case, return boolean
     if Y_range == None:
-        # for regression, return MAE
-        abs_error = abs(y_predict - y_test)
-        return abs_error
+        return abs(y_predict - y_test)
     else:
-        # for binary classification case, return boolean
         return y_predict == y_test
+
