@@ -12,24 +12,11 @@ X_test, Y_test, _ = loadData(fname_test)
 Y_range = metadata[metadata.names()[-1]][1]
 
 
-# # #
-# temp_counts = {}
-# for y_label in Y_range: temp_counts[y_label] = 0
-# for y in Y_test:
-#     temp_counts[y] += 1
-#
-# print temp_counts
-# for y_label in Y_range:
-#     print("%d = %s" %( Y_range.index(y_label), y_label))
-#
-# sys.exit('STOP')
-# # #
-
 Ks = [1, 30]
 for i in range(len(Ks)):
     # get prediction
-    accuracy, Y_hats = testModel(X_train, Y_train, X_test, Y_test, Y_range, Ks[i], False)
-
+    hits, Y_hats = testModel(X_train, Y_train, X_test, Y_test, Y_range, Ks[i], False)
+    accuracy = 1.0 * hits / len(Y_test)
     # compute the confusion matrix
     confusionMatrix = np.zeros((len(Y_range),len(Y_range)))
     for n in range(len(Y_test)):
@@ -50,5 +37,3 @@ for i in range(len(Ks)):
     plt.colorbar()
     plt.clim(0, 90)
     plt.show()
-
-

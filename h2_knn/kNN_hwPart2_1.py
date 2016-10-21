@@ -12,12 +12,13 @@ X_test, Y_test, _ = loadData(fname_test)
 Y_range = metadata[metadata.names()[-1]][1]
 
 Ks = [1, 5, 10, 20, 30]
-accuracy_test = np.zeros(len(Ks),)
+hits_test = np.zeros(len(Ks),)
 for i in range(len(Ks)):
-    accuracy_test[i], _ = testModel(X_train, Y_train, X_test, Y_test, Y_range, Ks[i], False)
+    hits_test[i], _ = testModel(X_train, Y_train, X_test, Y_test, Y_range, Ks[i], False)
 
 plt.figure(1)
-plt.plot(Ks, accuracy_test)
+accuracy = np.divide(hits_test, len(Y_test))
+plt.plot(Ks, accuracy)
 
 plt.title('%s' % fname_test)
 plt.ylabel('Test set classification accuracy')
