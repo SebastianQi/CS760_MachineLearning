@@ -43,7 +43,6 @@ def countBaseRate(Yvec):
     for y in Yvec:
         if y == 1 :
             counts +=1
-
     return 1.0 * counts / len(Yvec)
 
 

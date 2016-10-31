@@ -129,7 +129,6 @@ def nn_predict(wts, rawInput):
 
 def deltaLearn(X_train, Y_train, wts, lrate):
     inputDim = len(X_train[0])
-    wts_gradient = np.zeros(inputDim)
     # one sweep through the entire training set
     for m in range(len(Y_train)):
         # forward prop
@@ -148,6 +147,7 @@ def backprop(X_train, Y_train, wts, lrate):
     wts_gradient = []
     wts_gradient.append(np.zeros(np.shape(wts[0])))
     wts_gradient.append(np.zeros(np.shape(wts[1])))
+    error = 0
     # one sweep through the entire training set
     for m in range(len(Y_train)):
         # forward prop
@@ -163,12 +163,6 @@ def backprop(X_train, Y_train, wts, lrate):
         # update weights
         wts[1] += lrate * wts_gradient[1]
         wts[0] += lrate * wts_gradient[0]
+        error += np.abs(delta_o)
 
-    return wts
-
-
-
-
-
-
-
+    return wts, error
