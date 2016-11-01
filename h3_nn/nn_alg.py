@@ -106,13 +106,12 @@ def testModel(X_test, Y_test, wts):
         # forward prop
         output = nn_predict(wts, X_test[m])
         print ('Prediction = %.3f | Target = %.3f' %(output, Y_test[m]))
-        if output > .5 and Y_test[m] == 1:
-            counts += 1
-        elif output < .5 and Y_test[m] == 0:
+        if (output > .5 and Y_test[m] == 1) or (output < .5 and Y_test[m] == 0):
             counts += 1
 
     print ('Test Performance = %.3f (Baseline = %.3f)' %
            (1.0 * counts / len(Y_test), countBaseRate(Y_test)))
+    return counts
 
 
 def nn_predict(wts, rawInput):
@@ -127,35 +126,43 @@ def nn_predict(wts, rawInput):
 
 
 
-def deltaLearn(X_train, Y_train, wts, lrate):
-    inputDim = len(X_train[0])
+def deltaLearn(X, Y, wts, lrate):
     # one sweep through the entire training set
-    for m in range(len(Y_train)):
+    orderedIdx = np.random.permutation(len(Y))
+    error = 0
+    counts = 0
+    for m in orderedIdx:
         # forward prop
-        rawInput = np.array(X_train[m])
+        rawInput = np.array(X[m])
         output = sigmoid(np.dot(rawInput, wts[0]))
-        delta = Y_train[m] - output
+        delta = Y[m] - output
         # accumulate gradient
         wts_gradient = np.multiply(lrate * delta, rawInput)
         # update weights
         wts[0] += wts_gradient
-    return wts
+        # record performance measure
+        error += np.abs(delta)
+        if (output > .5 and Y[m] == 1) or (output < .5 and Y[m] == 0):
+            counts += 1
+    return wts, error, counts
 
 
-def backprop(X_train, Y_train, wts, lrate):
+def backprop(X, Y, wts, lrate):
     # preallocate for gradient accumulation
     wts_gradient = []
     wts_gradient.append(np.zeros(np.shape(wts[0])))
     wts_gradient.append(np.zeros(np.shape(wts[1])))
     error = 0
+    counts = 0
     # one sweep through the entire training set
-    for m in range(len(Y_train)):
+    orderedIdx = np.random.permutation(len(Y))
+    for m in orderedIdx:
         # forward prop
-        rawInput = np.array(X_train[m])
+        rawInput = np.array(X[m])
         hiddenAct = sigmoid(np.matmul(wts[0], rawInput))
         output = sigmoid(np.dot(hiddenAct, wts[1]))
         # backprop
-        delta_o = Y_train[m] - output
+        delta_o = Y[m] - output
         delta_h = delta_o * wts[1] * hiddenAct * (1 - hiddenAct)
         # compute gradient
         wts_gradient[1] = delta_o * hiddenAct
@@ -163,6 +170,8 @@ def backprop(X_train, Y_train, wts, lrate):
         # update weights
         wts[1] += lrate * wts_gradient[1]
         wts[0] += lrate * wts_gradient[0]
+        # record performance measure
         error += np.abs(delta_o)
-
-    return wts, error
+        if (output > .5 and Y[m] == 1) or (output < .5 and Y[m] == 0):
+            counts += 1
+    return wts, error, counts
