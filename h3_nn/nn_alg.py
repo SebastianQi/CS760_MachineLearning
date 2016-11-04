@@ -40,7 +40,7 @@ def loadData(data_):
         featureVector.append(1)
         X.append(featureVector)
 
-    return X, Y, metadata
+    return X, Y
 
 
 def processMetadata(metadata):
@@ -99,21 +99,6 @@ def loadSimpleData(mapping_type):
     return X, Y
 
 
-
-def testModel(X_test, Y_test, wts):
-    counts = 0
-    for m in range(len(Y_test)):
-        # forward prop
-        output = nn_predict(wts, X_test[m])
-        print ('Prediction = %.3f | Target = %.3f' %(output, Y_test[m]))
-        if (output > .5 and Y_test[m] == 1) or (output < .5 and Y_test[m] == 0):
-            counts += 1
-
-    print ('Test Performance = %.3f (Baseline = %.3f)' %
-           (1.0 * counts / len(Y_test), countBaseRate(Y_test)))
-    return counts
-
-
 def nn_predict(wts, rawInput):
     if len(wts) == 1:
         output = sigmoid(np.dot(rawInput, wts[0]))
@@ -123,7 +108,6 @@ def nn_predict(wts, rawInput):
     else:
         raise ValueError('Unrecognizable weight cardinality.\n')
     return output
-
 
 
 def deltaLearn(X, Y, wts, lrate):
@@ -141,7 +125,8 @@ def deltaLearn(X, Y, wts, lrate):
         # update weights
         wts[0] += wts_gradient
         # record performance measure
-        error += np.abs(delta)
+        # error += np.abs(delta)
+        error += -Y[m] * np.log(output) - (1 - Y[m]) * np.log(1 - output)
         if (output > .5 and Y[m] == 1) or (output < .5 and Y[m] == 0):
             counts += 1
     return wts, error, counts
@@ -171,7 +156,46 @@ def backprop(X, Y, wts, lrate):
         wts[1] += lrate * wts_gradient[1]
         wts[0] += lrate * wts_gradient[0]
         # record performance measure
-        error += np.abs(delta_o)
+        # error += np.abs(delta_o)
+        error += -Y[m] * np.log(output) - (1-Y[m]) * np.log(1-output)
         if (output > .5 and Y[m] == 1) or (output < .5 and Y[m] == 0):
             counts += 1
     return wts, error, counts
+
+
+def trainModel(X_train, Y_train, nHidden, lrate, nEpochs, printOutput = True):
+    # TODO input validation
+    # initialize the weights to uniform random values
+    wts = initWeights(len(X_train[0]), nHidden)
+
+    # train the model for some number of epochs
+    for e in range(nEpochs):
+        # update weights w.r.t one sweep of the training data
+        # model without hidden units
+        if nHidden == 0:
+            wts, error, counts = deltaLearn(X_train, Y_train, wts, lrate)
+        # general multilayerd model
+        elif nHidden > 0:
+            wts, error, counts = backprop(X_train, Y_train, wts, lrate)
+        else:
+            raise ValueError('Number of hidden units need to be postiive.\n')
+
+        if (np.mod(e, 100) == 0) and printOutput:
+            print ('Trainging Epoch = %6.d, error_L1 = %.6f, numCorrect = %d, numIncorrect = %d'
+                   % (e, error, counts, len(Y_train) - counts))
+    return wts
+
+
+def testModel(X_test, Y_test, wts, printOutput = True):
+    counts = 0
+    for m in range(len(Y_test)):
+        # forward prop
+        output = nn_predict(wts, X_test[m])
+        if (output > .5 and Y_test[m] == 1) or (output < .5 and Y_test[m] == 0):
+            counts += 1
+        if printOutput:
+            print ('Prediction = %.3f | Target = %.3f' % (output, Y_test[m]))
+    if printOutput:
+        print ('Test Performance = %.3f (Baseline = %.3f)' %
+               (1.0 * counts / len(Y_test), countBaseRate(Y_test)))
+    return counts
