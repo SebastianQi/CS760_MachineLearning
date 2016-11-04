@@ -20,23 +20,11 @@ def processInputArgs_nnet():
         fname_test = str(sys.argv[5])
     else:
         raise ValueError('ERROR: This program takes input arguments in the following way: '
-                 '\n\tnnet.py l h e <train-set-file> <test-set-file>\n')
+                 '\n\tnnet.py $learningRate $numHiddenUnits $trainingEpochs <train-set-file> '
+                         '<test-set-file>\n')
 
     print('%.3f, %d, %d, %s, %s' % (lrate, nHidden, nEpochs, fname_train, fname_test))
     return lrate, nHidden, nEpochs, fname_train, fname_test
-
-# def processInputArgs_kNN_select():
-#     numArgs = 5
-#     # process input arguments
-#     if len(sys.argv) == numArgs+1:
-#         fname_train = str(sys.argv[1])
-#         fname_test = str(sys.argv[2])
-#         [K1, K2, K3] = [int(str(sys.argv[3])), int(str(sys.argv[4])), int(str(sys.argv[5]))]
-#     else:
-#         sys.exit('ERROR: This program takes input arguments in the following way: '
-#                  '\n\tpython kNN-select.py <train-set-file> <test-set-file> k1 k2 k3')
-#     return fname_train, fname_test, [K1, K2, K3]
-
 
 def countBaseRate(Yvec):
     counts = 0
