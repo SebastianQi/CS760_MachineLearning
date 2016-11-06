@@ -9,7 +9,7 @@ fname_train = 'lymph_train.arff.txt'
 fname_test  = 'lymph_test.arff.txt'
 
 # TODO the parameters are unclear
-LRATE = .05
+LRATE = .1
 N_HIDDEN = 20
 NUM_EPOCHS = 1000
 
@@ -71,7 +71,7 @@ fpr, tpr, thresholds = metrics.roc_curve(Y_test, Y_hat, pos_label=1)
 plt.figure(2)
 LW = 2.0
 plt.plot(fpr, tpr, marker='x', linewidth=LW)
-plt.title('%s' % fname_test)
+plt.title('Number of hidden units = %d\n Data = %s' % (N_HIDDEN, fname_test))
 plt.ylabel('True Positive Rate');
 plt.xlabel('False Positive Rate')
 plt.show()

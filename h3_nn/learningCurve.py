@@ -9,7 +9,7 @@ fname_test  = 'heart_test.arff.txt'
 LRATE = .1
 N_HIDDEN = 0
 NUM_EPOCHS = [1, 10, 100, 500]
-SAMPLE_SIZE = 1
+SAMPLE_SIZE = 10
 
 # load data
 X_train, Y_train = loadData(fname_train)
@@ -52,4 +52,5 @@ plt.plot(NUM_EPOCHS, err_test, marker='x', linewidth=LW)
 plt.legend(['training set error', 'test set error'], loc='upper right')
 plt.title('Number of hidden units = %d\n Data = %s' % (N_HIDDEN, fname_test))
 plt.ylabel('Error'); plt.xlabel('Training Epochs')
+plt.ylim(ymax = .5, ymin = 0)
 plt.show()
