@@ -1,16 +1,9 @@
 from util import *
-
 import numpy as np
 import scipy.io.arff as sparff
 import sys
 
 def loadData(data_):
-    '''
-    The network uses a single input unit to represent each numeric feature,
-    and a one-of-k encoding for each nominal feature.
-    :param data_:
-    :return:
-    '''
     # read the training data
     data, metadata = sparff.loadarff(data_)
     M = len(metadata.names()) - 1
@@ -43,34 +36,7 @@ def loadData(data_):
     return X, Y
 
 
-def processMetadata(metadata):
-    # process metadataS
-    inputDim = 0
-    for name in metadata.names():
-        this_feature_info = metadata[name]
-        if this_feature_info[0].lower() == TYPE_NUMERIC:
-            inputDim += 1
-        elif this_feature_info[0].lower() == TYPE_NOMINAL:
-            inputDim += len(this_feature_info[1])
-        else:
-            raise ValueError('Unrecognizable feature type.\n')
-
-    inputDim = inputDim - 2 + 1 # assume y is binary & add 1 for the bias term
-    return inputDim
-
-
 def initWeights(inputDim, nHidden):
-    '''
-    1. If h = 0, the network should have no hidden units, and the input units should be directly
-    connected to the output unit. Otherwise, if h > 0, the network should have a single
-    layer of h hidden units with each fully connected to the input units and the output unit.
-    2. All weights and bias parameters are initialized to random values in [-0.01, 0.01].
-    3. Your network is intended for binary classification problems, and therefore it has one
-    output unit with a sigmoid function.
-    :param inputDim: feature vector dimension
-    :param nHidden: number of hidden units
-    :return: a weight vector if no hidden units; 2 matrices if hiddenUnits > 0
-    '''
     weights = []
     if nHidden == 0:
         weights.append(np.random.uniform(WEIGHTS_INIT_LB, WEIGHTS_INIT_UB, inputDim))
@@ -113,8 +79,8 @@ def nn_predict(wts, rawInput):
 def deltaLearn(X, Y, wts, lrate):
     # one sweep through the entire training set
     orderedIdx = np.random.permutation(len(Y))
-    error = 0
-    counts = 0
+    error, counts, mae = 0,0,0
+
     for m in orderedIdx:
         # forward prop
         rawInput = np.array(X[m])
@@ -125,11 +91,11 @@ def deltaLearn(X, Y, wts, lrate):
         # update weights
         wts[0] += wts_gradient
         # record performance measure
-        # error += np.abs(delta)
-        error += -Y[m] * np.log(output) - (1 - Y[m]) * np.log(1 - output)
-        if (output > .5 and Y[m] == 1) or (output < .5 and Y[m] == 0):
+        mae += np.abs(delta)
+        error += crossEntropyError(Y[m], output)
+        if (output > THRESHOLD and Y[m] == 1) or (output < THRESHOLD and Y[m] == 0):
             counts += 1
-    return wts, error, counts
+    return wts, error, counts, mae
 
 
 def backprop(X, Y, wts, lrate):
@@ -137,8 +103,8 @@ def backprop(X, Y, wts, lrate):
     wts_gradient = []
     wts_gradient.append(np.zeros(np.shape(wts[0])))
     wts_gradient.append(np.zeros(np.shape(wts[1])))
-    error = 0
-    counts = 0
+    error, counts, mae = 0,0,0
+
     # one sweep through the entire training set
     orderedIdx = np.random.permutation(len(Y))
     for m in orderedIdx:
@@ -156,15 +122,19 @@ def backprop(X, Y, wts, lrate):
         wts[1] += lrate * wts_gradient[1]
         wts[0] += lrate * wts_gradient[0]
         # record performance measure
-        # error += np.abs(delta_o)
-        error += -Y[m] * np.log(output) - (1-Y[m]) * np.log(1-output)
-        if (output > .5 and Y[m] == 1) or (output < .5 and Y[m] == 0):
+        mae += np.abs(delta_o)
+        error += crossEntropyError(Y[m], output)
+        if (output > THRESHOLD and Y[m] == 1) or (output < THRESHOLD and Y[m] == 0):
             counts += 1
-    return wts, error, counts
+    return wts, error, counts, mae
+
+
+def crossEntropyError(y, y_hat):
+    # TODO: handle log(0)
+    return -y * np.log(y_hat+SMALL_NUM) - (1-y) * np.log(1-y_hat+SMALL_NUM)
 
 
 def trainModel(X_train, Y_train, nHidden, lrate, nEpochs, printOutput = True):
-    # TODO input validation
     # initialize the weights to uniform random values
     wts = initWeights(len(X_train[0]), nHidden)
 
@@ -173,29 +143,52 @@ def trainModel(X_train, Y_train, nHidden, lrate, nEpochs, printOutput = True):
         # update weights w.r.t one sweep of the training data
         # model without hidden units
         if nHidden == 0:
-            wts, error, counts = deltaLearn(X_train, Y_train, wts, lrate)
+            wts, error, counts, mae = deltaLearn(X_train, Y_train, wts, lrate)
         # general multilayerd model
         elif nHidden > 0:
-            wts, error, counts = backprop(X_train, Y_train, wts, lrate)
+            wts, error, counts, mae = backprop(X_train, Y_train, wts, lrate)
         else:
             raise ValueError('Number of hidden units need to be postiive.\n')
 
         if (np.mod(e, 100) == 0) and printOutput:
-            print ('Trainging Epoch = %6.d, error_L1 = %.6f, numCorrect = %d, numIncorrect = %d'
-                   % (e, error, counts, len(Y_train) - counts))
+            print ('Trainging Epoch = %6.d, CEE = %6.4f, MAE = %6.4f, nRight = %d, nWrong = %d'
+                   % (e, error, mae, counts, len(Y_train) - counts))
     return wts
 
 
 def testModel(X_test, Y_test, wts, printOutput = True):
-    counts = 0
+    truePostive, trueNegative, falsePositive, falseNegative = 0, 0, 0, 0
+    outputs = []
     for m in range(len(Y_test)):
         # forward prop
         output = nn_predict(wts, X_test[m])
-        if (output > .5 and Y_test[m] == 1) or (output < .5 and Y_test[m] == 0):
-            counts += 1
-        if printOutput:
+        if Y_test[m] == 1:
+            if output > THRESHOLD:
+                truePostive +=1
+            else:
+                falseNegative +=1
+        elif Y_test[m] == 0:
+            if output < THRESHOLD:
+                trueNegative +=1
+            else:
+                falsePositive +=1
+        else:
+            raise ValueError('Y is neither 1 or 0.\n')
+
+
+        outputs.append(output)
+        if printOutput: # print a prediction vs. target for each instance
             print ('Prediction = %.3f | Target = %.3f' % (output, Y_test[m]))
-    if printOutput:
+    if (truePostive + trueNegative + falsePositive + falseNegative) != len(Y_test):
+        raise ValueError('TP + FP + TN + FN != |Y|.\n')
+
+    if printOutput: # print overall performance
         print ('Test Performance = %.3f (Baseline = %.3f)' %
-               (1.0 * counts / len(Y_test), countBaseRate(Y_test)))
-    return counts
+               (computeAccuracy(truePostive, trueNegative, falsePositive, falseNegative),
+                countBaseRate(Y_test)))
+
+    return truePostive, trueNegative, falsePositive, falseNegative, outputs
+
+
+def computeAccuracy(truePostive, trueNegative, falsePositive, falseNegative):
+    return 1.0 * (truePostive + trueNegative) / (truePostive + trueNegative + falsePositive + falseNegative)

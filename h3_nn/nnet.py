@@ -15,4 +15,4 @@ X_test, Y_test   = loadData(fname_test)
 # train the model
 weights = trainModel(X_train, Y_train, nHidden, lrate, nEpochs)
 # evalute on the test set
-counts = testModel(X_test, Y_test, weights)
+TP, TN, FP, FN, _ = testModel(X_test, Y_test, weights)
