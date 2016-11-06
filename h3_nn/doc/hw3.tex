@@ -85,10 +85,10 @@ Dependencies:
 \section*{Question2}
 \textbf{For this part, you will explore the effect of hidden units and the number of training epochs. Using heart\_train.arff and heart\_test.arff, you should make two graphs showing error-rates versus the number of training epochs. For the first graph, plot training and testing error rates for a single-layer network trained for 1, 10, 100 and 500 epochs, using a learning rate of 0.1. For the second graph, plot similar curves for a network with 20 hidden units. Be sure to label the axes of your plots.}
 \begin{center}
-\includegraphics[scale=.5]{pics/learningCurve_1.png}
+\includegraphics[scale=.5]{pics/learningCurve_noHidden.png}
 \end{center}
 \begin{center}
-\includegraphics[scale=.5]{pics/learningCurve_1.png}
+\includegraphics[scale=.5]{pics/learningCurve_hidden.png}
 \end{center}
 
 %----------------------------------------------------------------------------------------
@@ -99,8 +99,11 @@ Dependencies:
 \textbf{For this part, you should produce ROC curves for two data sets. Use the activation of the output unit as the measure of confidence that a given test instance is positive, and plot ROC curves for both the heart data set indicated above, and the lymphography data set lymph\_train.arff, lymph\_test.arff. Be sure to label the axes of your plots.}
 
 \begin{center}
-\includegraphics[scale=.5]{pics/roc.png}
+\includegraphics[scale=.5]{pics/roc_noHidden.png}
 \end{center}
 
+\begin{center}
+\includegraphics[scale=.5]{pics/roc_hidden.png}
+\end{center}
 
 \end{document}
