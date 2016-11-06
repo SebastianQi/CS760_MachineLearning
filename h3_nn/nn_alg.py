@@ -6,27 +6,27 @@ import sys
 def loadData(data_):
     # read the training data
     data, metadata = sparff.loadarff(data_)
-    M = len(metadata.names()) - 1
-    N_features = len(data)
-    label_info = metadata[metadata.names()[M]]
+    # numerical feature standardization
+    data = featureNormalization(data, metadata)
+    num_features = len(metadata.names()) - 1
+    num_instances = len(data)
+    feature_info = metadata[metadata.names()[num_features]]
     # convert data to a list of lists
-    X = []
-    Y = []
-    for n in range(N_features):
+    X, Y = [], []
+    for m in range(num_instances):
         # convert labels to 0-1 encoding
-        Y.append(label_info[1].index(data[n][M]))
-
+        Y.append(feature_info[1].index(data[m][num_features]))
         # create feature vector representation for each isntance
         featureVector = []
-        for m in range(M):
-            this_feature_info = metadata[metadata.names()[m]]
+        for n in range(num_features):
+            this_feature_info = metadata[metadata.names()[n]]
             # continuous valued feature - one value
             if this_feature_info[0].lower() == TYPE_NUMERIC:
-                featureVector.append(data[n][m])
+                featureVector.append(data[m][n])
             # discrete valued feature - one hot encoding
             elif this_feature_info[0].lower() == TYPE_NOMINAL:
                 placeholder = np.zeros(len(this_feature_info[1]),)
-                placeholder[this_feature_info[1].index(data[n][m])] = 1
+                placeholder[this_feature_info[1].index(data[m][n])] = 1
                 featureVector.extend(placeholder)
             else:
                 raise ValueError('Unrecognizable feature type.\n')
@@ -35,6 +35,25 @@ def loadData(data_):
 
     return X, Y
 
+
+def featureNormalization(data, metadata):
+    num_features = len(metadata.names()) - 1
+    num_instances = len(data)
+    # loop over all features
+    for n in range(num_features):
+        # find numerical features
+        feature_info = metadata[metadata.names()[n]]
+        if feature_info[0] == TYPE_NUMERIC:
+            vals = np.zeros(num_instances,)
+            # loop over all instances to compute mean and std
+            for m in range(num_instances):
+                vals[m] = data[m][n]
+            feature_mean = np.mean(vals)
+            feature_std = np.std(vals)
+            # loop over all instances to do normalization
+            for m in range(num_instances):
+                data[m][n] = 1.0 * (data[m][n] - feature_mean) / feature_std
+    return data
 
 def initWeights(inputDim, nHidden):
     weights = []
