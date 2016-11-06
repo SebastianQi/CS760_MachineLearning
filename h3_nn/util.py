@@ -6,7 +6,9 @@ TYPE_NUMERIC = 'numeric'
 WEIGHTS_INIT_LB = -0.01
 WEIGHTS_INIT_UB =  0.01
 
-SMALL_NUM = 1e-10
+THRESHOLD = .5
+
+SMALL_NUM = 0
 
 def processInputArgs_nnet():
     numArgs = 5
@@ -15,15 +17,13 @@ def processInputArgs_nnet():
         lrate = float(str(sys.argv[1]))
         nHidden = int(str(sys.argv[2]))
         nEpochs = int(str(sys.argv[3]))
-
         fname_train = str(sys.argv[4])
         fname_test = str(sys.argv[5])
     else:
         raise ValueError('ERROR: This program takes input arguments in the following way: '
                  '\n\tnnet.py $learningRate $numHiddenUnits $trainingEpochs <train-set-file> '
                          '<test-set-file>\n')
-
-    print('%.3f, %d, %d, %s, %s' % (lrate, nHidden, nEpochs, fname_train, fname_test))
+    # print('%.3f, %d, %d, %s, %s' % (lrate, nHidden, nEpochs, fname_train, fname_test))
     return lrate, nHidden, nEpochs, fname_train, fname_test
 
 def countBaseRate(Yvec):
