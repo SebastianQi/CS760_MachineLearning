@@ -7,13 +7,15 @@ fname_test  = 'heart_test.arff.txt'
 # fname_test  = 'lymph_test.arff.txt'
 
 LRATE = .1
-N_HIDDEN = 0
+N_HIDDEN = 20
 NUM_EPOCHS = [1, 10, 100, 500]
-SAMPLE_SIZE = 10
+SAMPLE_SIZE = 20
 
 # load data
-X_train, Y_train = loadData(fname_train)
-X_test, Y_test   = loadData(fname_test)
+# X_train, Y_train = loadData(fname_train)
+# X_test, Y_test   = loadData(fname_test)
+X_train, Y_train, feature_mean, feature_std = loadData(fname_train, True)
+X_test, Y_test, _,_ = loadData(fname_test, False, feature_mean, feature_std)
 
 # preallocate
 err_train = np.zeros(len(NUM_EPOCHS))

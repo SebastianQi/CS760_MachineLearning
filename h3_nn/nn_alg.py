@@ -1,14 +1,17 @@
 from util import *
 import numpy as np
 import scipy.io.arff as sparff
-import sys
 
-def loadData(data_):
+def loadData(data_, isTrainingData, feature_mean = np.NAN,feature_std= np.NAN):
     # read the training data
     data, metadata = sparff.loadarff(data_)
     # numerical feature standardization
-    data = featureNormalization(data, metadata)
-    num_features = len(metadata.names()) - 1
+    if isTrainingData:
+        data, feature_mean,feature_std = featureNormalization(data, metadata, isTrainingData)
+    else:
+        data, _,_ = featureNormalization(data, metadata, isTrainingData, feature_mean, feature_std)
+    # local constants
+    num_features = len(metadata.names()) -1
     num_instances = len(data)
     feature_info = metadata[metadata.names()[num_features]]
     # convert data to a list of lists
@@ -32,28 +35,33 @@ def loadData(data_):
                 raise ValueError('Unrecognizable feature type.\n')
         featureVector.append(1)
         X.append(featureVector)
+    return X, Y, feature_mean,feature_std
 
-    return X, Y
 
-
-def featureNormalization(data, metadata):
+def featureNormalization(data, metadata, isTrainingData,
+                         feature_mean = np.NAN, feature_std = np.NAN):
     num_features = len(metadata.names()) - 1
     num_instances = len(data)
     # loop over all features
+    if isTrainingData:
+        feature_mean, feature_std = np.empty(num_features, ), np.empty(num_features, )
+        feature_mean[:], feature_std[:] = np.NAN, np.NAN
     for n in range(num_features):
         # find numerical features
         feature_info = metadata[metadata.names()[n]]
         if feature_info[0] == TYPE_NUMERIC:
-            vals = np.zeros(num_instances,)
-            # loop over all instances to compute mean and std
+            vals = np.zeros(num_instances, )
+            # loop over all instances, compute mean and std
+            if isTrainingData:
+                for m in range(num_instances):
+                    vals[m] = data[m][n]
+                feature_mean[n] = np.mean(vals)
+                feature_std[n] = np.std(vals)
+            # loop over all instances AGAIN, do normalization
             for m in range(num_instances):
-                vals[m] = data[m][n]
-            feature_mean = np.mean(vals)
-            feature_std = np.std(vals)
-            # loop over all instances to do normalization
-            for m in range(num_instances):
-                data[m][n] = 1.0 * (data[m][n] - feature_mean) / feature_std
-    return data
+                data[m][n] = 1.0 * (data[m][n] - feature_mean[n]) / feature_std[n]
+    return data,feature_mean,feature_std
+
 
 def initWeights(inputDim, nHidden):
     weights = []
@@ -71,24 +79,24 @@ def sigmoid(input):
     return np.divide(1.0,(np.add(1.0,np.exp(-input))))
 
 
-def loadSimpleData(mapping_type):
-    X = np.reshape(np.array([0, 0, 1, 0, 1, 1, 1, 0, 1, 1, 1, 1]), (4,3))
-    if mapping_type is 'or':
-        Y = np.array([0, 1, 1, 1])
-    elif mapping_type is 'and':
-        Y = np.array([0, 0, 0, 1])
-    elif mapping_type is 'xor':
-        Y = np.array([0, 1, 1, 0])
-    else:
-        raise ValueError('Unrecognizable pattern type.\n')
-    return X, Y
+# def loadSimpleData(mapping_type):
+#     X = np.reshape(np.array([0, 0, 1, 0, 1, 1, 1, 0, 1, 1, 1, 1]), (4,3))
+#     if mapping_type is 'or':
+#         Y = np.array([0, 1, 1, 1])
+#     elif mapping_type is 'and':
+#         Y = np.array([0, 0, 0, 1])
+#     elif mapping_type is 'xor':
+#         Y = np.array([0, 1, 1, 0])
+#     else:
+#         raise ValueError('Unrecognizable pattern type.\n')
+#     return X, Y
 
 
 def nn_predict(wts, rawInput):
     if len(wts) == 1:
         output = sigmoid(np.dot(rawInput, wts[0]))
     elif len(wts) == 2:
-        hiddenAct = sigmoid(np.matmul(wts[0], rawInput))
+        hiddenAct = sigmoid(np.dot(wts[0], rawInput))
         output = sigmoid(np.dot(hiddenAct, wts[1]))
     else:
         raise ValueError('Unrecognizable weight cardinality.\n')
@@ -129,7 +137,7 @@ def backprop(X, Y, wts, lrate):
     for m in orderedIdx:
         # forward prop
         rawInput = np.array(X[m])
-        hiddenAct = sigmoid(np.matmul(wts[0], rawInput))
+        hiddenAct = sigmoid(np.dot(wts[0], rawInput))
         output = sigmoid(np.dot(hiddenAct, wts[1]))
         # backprop
         delta_o = Y[m] - output
@@ -149,7 +157,6 @@ def backprop(X, Y, wts, lrate):
 
 
 def crossEntropyError(y, y_hat):
-    # TODO: handle log(0)
     return -y * np.log(y_hat+SMALL_NUM) - (1-y) * np.log(1-y_hat+SMALL_NUM)
 
 
@@ -169,9 +176,9 @@ def trainModel(X_train, Y_train, nHidden, lrate, nEpochs, printOutput = True):
         else:
             raise ValueError('Number of hidden units need to be postiive.\n')
 
-        if (np.mod(e, 100) == 0) and printOutput:
-            print ('Trainging Epoch = %6.d, CEE = %6.4f, MAE = %6.4f, nRight = %d, nWrong = %d'
-                   % (e, error, mae, counts, len(Y_train) - counts))
+        # print ('Trainging Epoch = %6.d, CEE = %6.4f, MAE = %6.4f, nRight = %d, nWrong = %d'
+        #        % (e, error, mae, counts, len(Y_train) - counts))
+        print ('%d\t%.4f\t%d\t%d' % (e, error, counts, len(Y_train) - counts))
     return wts
 
 
@@ -197,14 +204,16 @@ def testModel(X_test, Y_test, wts, printOutput = True):
 
         outputs.append(output)
         if printOutput: # print a prediction vs. target for each instance
-            print ('Prediction = %.3f | Target = %.3f' % (output, Y_test[m]))
+            print ('%.4f\t%d' % (output, Y_test[m]))
+
     if (truePostive + trueNegative + falsePositive + falseNegative) != len(Y_test):
         raise ValueError('TP + FP + TN + FN != |Y|.\n')
 
     if printOutput: # print overall performance
-        print ('Test Performance = %.3f (Baseline = %.3f)' %
-               (computeAccuracy(truePostive, trueNegative, falsePositive, falseNegative),
-                countBaseRate(Y_test)))
+        print('%d\t%d' % (truePostive + trueNegative, falsePositive + falseNegative))
+        # print ('Test Performance = %.3f (Baseline = %.3f)' %
+        #        (computeAccuracy(truePostive, trueNegative, falsePositive, falseNegative),
+        #         countBaseRate(Y_test)))
 
     return truePostive, trueNegative, falsePositive, falseNegative, outputs
 

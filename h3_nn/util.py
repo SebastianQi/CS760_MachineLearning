@@ -8,7 +8,7 @@ WEIGHTS_INIT_UB =  0.01
 
 THRESHOLD = .5
 
-SMALL_NUM = 0
+SMALL_NUM = 1e-10
 
 def processInputArgs_nnet():
     numArgs = 5
