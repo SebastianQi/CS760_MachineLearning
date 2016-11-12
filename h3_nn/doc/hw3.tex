@@ -56,7 +56,7 @@
 \section*{Question1}
 
 To run the program, type the following command: 
-$$ \text{nnet l h e <train-set-file> <test-set-file>} $$ 
+$$ \text{./nnet l h e <train-set-file> <test-set-file>} $$ 
 where l specifies the learning rate, h the number of hidden units and e the number of training epochs. \\\\\\
 
 Code: 
@@ -83,13 +83,16 @@ Dependencies:
 %----------------------------------------------------------------------------------------
 \newpage
 \section*{Question2}
-\textbf{For this part, you will explore the effect of hidden units and the number of training epochs. Using heart\_train.arff and heart\_test.arff, you should make two graphs showing error-rates versus the number of training epochs. For the first graph, plot training and testing error rates for a single-layer network trained for 1, 10, 100 and 500 epochs, using a learning rate of 0.1. For the second graph, plot similar curves for a network with 20 hidden units. Be sure to label the axes of your plots.}
+\textbf{Using heart\_train.arff and heart\_test.arff, you should make two graphs showing error-rates versus the number of training epochs. For the first graph, plot training and testing error rates for a single-layer network trained for 1, 10, 100 and 500 epochs, using a learning rate of 0.1. For the second graph, plot similar curves for a network with 20 hidden units. }
 \begin{center}
-\includegraphics[scale=.5]{pics/learningCurve_noHidden.png}
+\includegraphics[scale=.45]{pics/learningCurve_noHidden.png}
 \end{center}
 \begin{center}
-\includegraphics[scale=.5]{pics/learningCurve_hidden.png}
+\includegraphics[scale=.45]{pics/learningCurve_hidden.png}
 \end{center}
+
+The learning curves above are the average results of 20 runs. Although the model with hidden units (the bottom figure) did better at reducing the training error, but its test error is higher, compared to the simpler perceptron (without hidden layer). This suggests that the model with 20 hidden units is overfitting the training set. This issue of overfitting (the bottom figure) can also be seen from the increasing trend of the test error over the training epochs. 
+
 
 %----------------------------------------------------------------------------------------
 %	PROBLEM 3
@@ -105,5 +108,7 @@ Dependencies:
 \begin{center}
 \includegraphics[scale=.5]{pics/roc_hidden.png}
 \end{center}
+
+In this simulation, both models were trained for 500 epochs with learning rate of .1. The model with the hidden layer has five hidden units. It turned out that the model with five hidden units achieved a better accuracy, suggesting the simple perceptron is slightly underfitting the data. 
 
 \end{document}
