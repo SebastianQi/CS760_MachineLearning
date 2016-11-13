@@ -2,14 +2,14 @@ import matplotlib.pyplot as plt
 import numpy as np
 from nn_alg import *
 
-# fname_train = 'heart_train.arff.txt'
-# fname_test  = 'heart_test.arff.txt'
-fname_train = 'lymph_train.arff.txt'
-fname_test  = 'lymph_test.arff.txt'
+fname_train = 'heart_train.arff.txt'
+fname_test  = 'heart_test.arff.txt'
+# fname_train = 'lymph_train.arff.txt'
+# fname_test  = 'lymph_test.arff.txt'
 
 # TODO the parameters are unclear
 LRATE = .1
-N_HIDDEN = 0
+N_HIDDEN = 5
 NUM_EPOCHS = 500
 
 # load data

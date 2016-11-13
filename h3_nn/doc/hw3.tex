@@ -99,16 +99,29 @@ The learning curves above are the average results of 20 runs. Although the model
 %----------------------------------------------------------------------------------------
 \newpage
 \section*{Question3}
-\textbf{For this part, you should produce ROC curves for two data sets. Use the activation of the output unit as the measure of confidence that a given test instance is positive, and plot ROC curves for both the heart data set indicated above, and the lymphography data set lymph\_train.arff, lymph\_test.arff. Be sure to label the axes of your plots.}
+\textbf{For this part, you should produce ROC curves for two data sets. Use the activation of the output unit as the measure of confidence that a given test instance is positive, and plot ROC curves for both the heart data set indicated above, and the lymphography data set lymph\_train.arff, lymph\_test.arff. Be sure to label the axes of your plots.\\}
 
+1. Here're the results for the \textbf{lymph} data set: 
 \begin{center}
-\includegraphics[scale=.5]{pics/roc_noHidden.png}
+\includegraphics[scale=.45]{pics/roc_noHidden.png}
 \end{center}
 
 \begin{center}
-\includegraphics[scale=.5]{pics/roc_hidden.png}
+\includegraphics[scale=.45]{pics/roc_hidden.png}
 \end{center}
 
-In this simulation, both models were trained for 500 epochs with learning rate of .1. The model with the hidden layer has five hidden units. It turned out that the model with five hidden units achieved a better accuracy, suggesting the simple perceptron is slightly underfitting the data. 
+In this simulation, both models were trained for 500 epochs with learning rate of .1. The model with the hidden layer has five hidden units. It turned out that the model with five hidden units achieved a better accuracy and a slightly larger area under ROC curve, suggesting the simple perceptron is slightly underfitting the data. 
+
+\newpage
+2. Here're the results for the \textbf{heart} data set: 
+\begin{center}
+\includegraphics[scale=.45]{pics/roc_noHidden_heart.png}
+\end{center}
+
+\begin{center}
+\includegraphics[scale=.45]{pics/roc_hidden_heart.png}
+\end{center}
+
+In this simulation, both models were trained for 500 epochs with learning rate of .1. The multilayered-model has 20 hidden units. The results show that the simpler model no hidden units had a significantly larger area under the ROC curve, indicating the model with 20 hidden units is overfitting the training set. 
 
 \end{document}
