@@ -3,6 +3,7 @@ import numpy as np
 import scipy.io.arff as sparff
 import sys
 
+
 def loadData(data_fname):
     # read the training data
     data, metadata = sparff.loadarff(data_fname)
@@ -42,19 +43,105 @@ def printGraph_NaiveBayes(metadata):
     print
 
 
-def printSomeInstances(list, X):
-    for rowIdx in list:
-        print X[rowIdx,:]
+
 
 def buildTreeAugBayesNet(X, Y, numVals):
     return 0
 
 
+def computeTreeWeights(X, Y, numVals):
+    # compute the base rate of Y & P(X = X_i|Y) for all i
+    P_Y = computeDistribution(Y, numVals[-1])
+    P_XgY = computeP_XgY(X, Y, numVals)
+
+    # compute P(X_i,X_j | Y) for all i,j
+    P_XXgY = computeP_XX_Y(X, Y, numVals)
+    P_XXY = computeP_XXY(X, Y, numVals)
+
+    return P_Y, P_XgY, P_XXgY, P_XXY
+
+
+def computeP_XX_Y(X, Y, numVals):
+    '''
+    :return: P_XXgY - Probability (X1 = xi, X2 = xj | Y = yk) for all i j k
+        - P_XXgY is a list of list of list with structure : [y][X1][X2]
+        - I did not compute diag terms, please use P_XgY directly
+        - I believe only upper triangular entries are needed
+    '''
+    P_XXgY = []
+    # loop over all possible y values
+    for y_val in range(numVals[-1]):
+        # condition on a particular y value
+        X_red, Y_red = getDataSubset(X, Y, np.shape(X)[1], y_val)
+        # compute P(Xi, Xj| Y = y)
+        P_XXgY.append(computeP_XX(X_red, numVals))
+    return P_XXgY
+
+
+def computeP_XX(X, numVals):
+
+    def computeP_XiXj(Xi, Xj, numVals_i, numVals_j):
+        counts = np.zeros((numVals_i, numVals_j))
+        # loop over all combinations of feature values (for Xi and Xj)
+        for xi in range(numVals_i):
+            for xj in range(numVals_j):
+                # loop over all instances to accumulate the counts
+                for m in range(len(Xi)):
+                    if (Xi[m] == xi) and (Xj[m] == xj): counts[xi][xj] += 1
+        P_XiXj = np.divide(counts, len(Xi))
+        return P_XiXj
+
+    N = np.shape(X)[1] -1
+    P_XX = createListOfList(N, N)
+    for i in range(N):
+        for j in range(N):
+            if i != j:
+                P_XX[i][j] = computeP_XiXj(X[:,i], X[:,j], numVals[i],numVals[j])
+    return P_XX
+
+
+def computeP_XXY(X, Y, numVals):
+    '''
+    :return: a tensor of (triple) joint distribution
+    '''
+    joint_XXY = np.zeros((np.shape(X)[1],np.shape(X)[1], numVals[-1]))
+    # loop over Y_k
+    # for k in numVals[-1]:
+    for k in range(numVals[-1]):
+        # loop over all features
+        for i in range(np.shape(X)[1]):
+            # loop over all features
+            for j in range(np.shape(X)[1]):
+                if i != j:
+                    print i, j
+                    joint_XXY[i,j,k] = computeP_XiXjYk(X, i, j, numVals, Y, k)
+
+        sys.exit('STOP')
+    print joint_XXY
+    return joint_XXY
+
+
+def computeP_XiXjYk(X, i, j, numVals, Y, k):
+    counts = np.zeros((numVals[i],numVals[j]))
+    # xi, xj = numVals[i], numVals[j]
+    for xi in range(numVals[i]):
+        for xj in range(numVals[j]):
+            # loop over instances
+            for m in range(np.shape(X)[0]):
+                if X[m,i] == xi and X[m,j] == xj and Y[m] == k:
+                    counts[i,j]+=1
+    distribution = np.divide(1.0 * counts, np.shape(X)[0])
+    print distribution
+    sys.exit('STOP')
+    return distribution
+
+
 def buildNaiveBayesNet(X, Y, numVals):
-    # compute the conditional probability
+    # compute the base rate of Y & P(X = X_i|Y) for all i
     P_Y = computeDistribution(Y, numVals[-1])
     P_XgY = computeP_XgY(X, Y, numVals)
     return P_Y, P_XgY
+
 
 def printTestResults(Y_hat, Y_prob, Y_test, metadata):
     y_range = metadata[metadata.names()[-1]][1]
@@ -64,6 +151,7 @@ def printTestResults(Y_hat, Y_prob, Y_test, metadata):
         print('%s %s %.12f' % (prediction.strip('"\''), truth.strip('"\''), Y_prob[m]))
     hits = np.sum(np.around(Y_hat) == Y_test)
     print ('\n%d' % hits)
+
 
 def naiveBayesPredict(x_new, P_Y, P_XgY, numVals_Y = 2):
     probs = np.zeros(numVals_Y,)
@@ -77,6 +165,7 @@ def naiveBayesPredict(x_new, P_Y, P_XgY, numVals_Y = 2):
     predictedClass = np.argmax(prediction_distribution)
     predictedProbability = prediction_distribution[predictedClass]
     return predictedClass, predictedProbability
+
 
 def computePredictions_NaiveBayes(X_test, P_Y, P_XgY):
     Y_hat, Y_prob = np.zeros(np.shape(X_test)[0],), np.zeros(np.shape(X_test)[0],)
@@ -99,6 +188,7 @@ def computeP_XgY(X, Y, numVals):
             P_XgY[val].append(computeDistribution(X_sub[:,n], numVals[n]))
     return P_XgY
 
+
 def getDataSubset(X, Y, idx_feature, val_feature):
     '''
     Reduce X and Y, by selecting {rows: X_idx == val_feature}
@@ -118,6 +208,7 @@ def getDataSubset(X, Y, idx_feature, val_feature):
     Y_reduced = Y[idx_target]
     return X_reduced, Y_reduced
 
+
 def computeDistribution(vector, numVals):
     '''
     Given a vector of discrete value and number of possible values, compute the distribution
@@ -126,10 +217,11 @@ def computeDistribution(vector, numVals):
     :return: a probability distribution
     '''
     counts = getFrequency(vector, numVals)
-    # MAP estimation with laplace smoothing (PSEUDO_COUNTS == 1)
+    # MAP estimation with smoothing
     counts += PSEUDO_COUNTS
     distribution = 1.0 * counts / np.sum(counts)
     return distribution
+
 
 def getFrequency(vector, numVals):
     counts = np.zeros(numVals,)

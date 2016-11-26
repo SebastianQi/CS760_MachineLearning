@@ -19,6 +19,7 @@ if option == 'n':
 
 elif option == 't':
     # train a tree agumented bayes classifer
+    computeTreeWeights(X_train, Y_train, numVals)
     buildTreeAugBayesNet(X_train, Y_train, numVals)
 
 else:
