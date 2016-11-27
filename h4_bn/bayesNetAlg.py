@@ -210,31 +210,20 @@ def buildNaiveBayesNet(X, Y, numVals):
     return P_Y, P_XgY
 
 
-def printTestResults(Y_hat, Y_prob, Y_test, metadata):
-    y_range = metadata[metadata.names()[-1]][1]
-    for m in range(len(Y_test)):
-        prediction = y_range[int(Y_hat[m])]
-        truth = y_range[Y_test[m]]
-        print('%s %s %.12f' % (prediction.strip('"\''), truth.strip('"\''), Y_prob[m]))
-    hits = np.sum(np.around(Y_hat) == Y_test)
-    print ('\n%d' % hits)
-
-
-def naiveBayesPredict(x_new, P_Y, P_XgY, numVals_Y = 2):
-    probs = np.zeros(numVals_Y,)
-    for y_val in range(numVals_Y):
-        probs[y_val] = P_Y[y_val]
-        for n in range(len(x_new)):
-            temp = P_XgY[y_val][n]
-            probs[y_val] *= temp[x_new[n]]
-    # get the idx and the value of the max
-    prediction_distribution = np.divide(probs, np.sum(probs))
-    predictedClass = np.argmax(prediction_distribution)
-    predictedProbability = prediction_distribution[predictedClass]
-    return predictedClass, predictedProbability
-
-
 def computePredictions_NaiveBayes(X_test, P_Y, P_XgY):
+    def naiveBayesPredict(x_new, P_Y, P_XgY, numVals_Y=2):
+        probs = np.zeros(numVals_Y, )
+        for y_val in range(numVals_Y):
+            probs[y_val] = P_Y[y_val]
+            for n in range(len(x_new)):
+                temp = P_XgY[y_val][n]
+                probs[y_val] *= temp[x_new[n]]
+        # get the idx and the value of the max
+        prediction_distribution = np.divide(probs, np.sum(probs))
+        predictedClass = np.argmax(prediction_distribution)
+        predictedProbability = prediction_distribution[predictedClass]
+        return predictedClass, predictedProbability
+
     Y_hat, Y_prob = np.zeros(np.shape(X_test)[0],), np.zeros(np.shape(X_test)[0],)
     # loop over rows, make prediction
     for m in range(np.shape(X_test)[0]):

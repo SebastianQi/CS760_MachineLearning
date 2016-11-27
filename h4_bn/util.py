@@ -18,6 +18,18 @@ def getInputArgs():
                  '\n\tbayes <train-set-file> <test-set-file> <n|t>\n')
     return fname_train, fname_test, option
 
+
+
+def printTestResults(Y_hat, Y_prob, Y_test, metadata):
+    y_range = metadata[metadata.names()[-1]][1]
+    for m in range(len(Y_test)):
+        prediction = y_range[int(Y_hat[m])]
+        truth = y_range[Y_test[m]]
+        print('%s %s %.12f' % (prediction.strip('"\''), truth.strip('"\''), Y_prob[m]))
+    hits = np.sum(np.around(Y_hat) == Y_test)
+    print ('\n%d' % hits)
+
+
 def printDataMatrix(X):
     for m in range(np.shape(X)[0]):
         print m, X[m][:]
