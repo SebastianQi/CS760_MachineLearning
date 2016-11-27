@@ -35,10 +35,8 @@ def findMaxSpanningTree_prim(A):
     P = [None]*len(V)
     # initialize and set each value of the array K (key) to inf
     K = [-float('inf')]*len(V)
-
     # initialize the min queue and fill it with all vertices in V
     Q = V
-
     # set the key of the root (the 1st node) to 0
     K[0] = 0
     sort_increaseKey(Q, K)    # maintain the min queue
@@ -46,18 +44,13 @@ def findMaxSpanningTree_prim(A):
     # loop while the min queue is not empty
     while len(Q) > 0:
         u = extractMin(Q)    # pop the first vertex off the min queue
-
         # loop through the vertices adjacent to u
         adjVertex = adjacent(A, u)
-
         for v in adjVertex:
             w = A[u][v]    # get the weight of the edge uv
-
             # proceed if v is in Q and the weight of uv is less than v's key
             if Q.count(v)> 0 and w > K[v]:
-                # set v's parent to u
-                P[v] = u
-                # v's key to the weight of uv
-                K[v] = w
+                P[v] = u    # set v's parent to u
+                K[v] = w    # v's key to the weight of uv
                 sort_increaseKey(Q, K)    # maintain the min queue
     return P

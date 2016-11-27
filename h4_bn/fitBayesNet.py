@@ -22,9 +22,15 @@ if option == 'n':
 elif option == 't':
     # train a tree agumented bayes classifer
     MI, P_Y, P_XgY, P_XXgY, P_XXY = computeTreeWeights(X_train, Y_train, numVals)
-    MST = prim(MI)
-    print 'TAN structure:', MST
+    MI = copyUpperTolowerTrig(MI)
+    MST = findMaxSpanningTree_prim(MI)
 
+    print 'TAN structure:'
+    idx = [i for i in range(len(MST))]
+    MST
+    for i in range(len(MST)):
+        print idx[i],MST[i]
+    sys.exit('STOP')
     # print graph
 
     # make prediction

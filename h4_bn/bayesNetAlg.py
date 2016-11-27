@@ -60,28 +60,6 @@ def computePredictions_TAN(X_test, MST, P_Y, P_XgY, P_XXgY, P_XXY):
     return Y_hat, Y_prob
 
 
-def getMST_prim(weightsMat):
-    MST = 0
-    N = np.shape(weightsMat)[0]
-    T = np.zeros((N,), dtype = bool)
-    E = np.zeros((N,N), dtype = bool)
-    T[0] = True
-    while any(T == False):
-        possibleNodes = set()
-        # add a node (incident to a min cost edge) to T s.t. (E,T) is still a tree
-        for i in range(N):
-            for j in range(N):
-                if T[i] == False and weightsMat[i][j] > 0:
-                    possibleNodes.add(j)
-        print possibleNodes
-
-        nextnode = np.argmax(weightsMat[0,possibleNodes])
-        # T[nextnode] = True
-        sys.exit('STOP')
-
-    return MST
-
-
 def computeTreeWeights(X, Y, numVals):
     # compute the base rate of Y & P(X = X_i|Y) for all i
     P_Y = computeDistribution(Y, numVals[-1])
@@ -103,6 +81,7 @@ def computeMI(P_XgY, P_XXgY, P_XXY, numVals):
     # compute the upper triangular part of the mutual information matrix
     for i in range(N):
         for j in range(i+1,N,1):
+        # for j in range(N):
 
             for k in range(numVal_y):
                 # compute mutual information

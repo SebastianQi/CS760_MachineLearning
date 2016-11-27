@@ -68,3 +68,11 @@ def printMatrix(matrix):
         for n in range(N):
             sys.stdout.write('%.18f ' % matrix[m,n])
         sys.stdout.write('\n')
+
+
+def copyUpperTolowerTrig(matrix):
+    N = np.shape(matrix)[1]
+    for i in range(N):
+        for j in range(i, N):
+            matrix[j][i] = matrix[i][j]
+    return matrix
