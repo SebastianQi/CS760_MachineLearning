@@ -37,28 +37,89 @@ def printGraph_NaiveBayes(metadata):
         feature_info = metadata[metadata.names()[n]]
         if feature_info[0] == 'nominal':
             # the node and its parent (class for naive bayes)
-            print('%s %s ' % (metadata.names()[n], metadata.names()[-1]))
+            print('%s %s' % (metadata.names()[n], metadata.names()[-1]))
         else:
             raise ValueError('Feature type must be "nominal"')
     print
 
 
+def buildTreeAugBayesNet(X, Y, numVals, P_Y, P_XgY, P_XXgY, P_XXY):
+    N = np.shape(X)[1]
 
-
-def buildTreeAugBayesNet(X, Y, numVals):
     return 0
+
+
+
+def computePredictions_TAN(X_test, MST, P_Y, P_XgY, P_XXgY, P_XXY):
+    M = np.shape(X_test)[0]
+    Y_hat, Y_prob = np.zeros(M,),np.zeros(M,)
+    for m in range(M):
+        print X_test[m,:]
+        sys.exit('STOP_prediction_tan')
+
+    return Y_hat, Y_prob
+
+
+def getMST_prim(weightsMat):
+    MST = 0
+    N = np.shape(weightsMat)[0]
+    T = np.zeros((N,), dtype = bool)
+    E = np.zeros((N,N), dtype = bool)
+    T[0] = True
+    while any(T == False):
+        possibleNodes = set()
+        # add a node (incident to a min cost edge) to T s.t. (E,T) is still a tree
+        for i in range(N):
+            for j in range(N):
+                if T[i] == False and weightsMat[i][j] > 0:
+                    possibleNodes.add(j)
+        print possibleNodes
+
+        nextnode = np.argmax(weightsMat[0,possibleNodes])
+        # T[nextnode] = True
+        sys.exit('STOP')
+
+    return MST
 
 
 def computeTreeWeights(X, Y, numVals):
     # compute the base rate of Y & P(X = X_i|Y) for all i
     P_Y = computeDistribution(Y, numVals[-1])
     P_XgY = computeP_XgY(X, Y, numVals)
-
     # compute P(X_i,X_j | Y) for all i,j
     P_XXgY = computeP_XX_Y(X, Y, numVals)
     P_XXY = computeP_XXY(X, Y, numVals)
+    # compute the weights
+    MI = computeMI(P_XgY, P_XXgY, P_XXY, numVals)
 
-    return P_Y, P_XgY, P_XXgY, P_XXY
+    return MI, P_Y, P_XgY, P_XXgY, P_XXY
+
+
+def computeMI(P_XgY, P_XXgY, P_XXY, numVals):
+
+    numVal_y = numVals[-1]
+    N = len(numVals)-1
+    mutualInfo = np.zeros((N,N))
+    # compute the upper triangular part of the mutual information matrix
+    for i in range(N):
+        for j in range(i+1,N,1):
+
+            for k in range(numVal_y):
+                # compute mutual information
+                mutualInfo[i, j] += computeMI_XiXjgYk(P_XXY[k][i][j], P_XXgY[k][i][j], P_XgY[k][i],
+                                                      P_XgY[k][j], numVals[i], numVals[j])
+    # assign the diag terms to be zeros
+    for n in range(N):
+        mutualInfo[n,n] = -1
+    return mutualInfo
+
+def computeMI_XiXjgYk(P_XiXjYk, P_XiXj_Yk, P_Xi_Yk, P_Xj_Yk, numVals_i, numVals_j):
+    mi = 0
+    for xi in range(numVals_i):
+        for xj in range(numVals_j):
+            mi += P_XiXjYk[xi][xj] * np.log2(P_XiXj_Yk[xi, xj] / (P_Xi_Yk[xi] * P_Xj_Yk[xj]))
+
+    return mi
 
 
 def computeP_XX_Y(X, Y, numVals):
@@ -68,6 +129,33 @@ def computeP_XX_Y(X, Y, numVals):
         - I did not compute diag terms, please use P_XgY directly
         - I believe only upper triangular entries are needed
     '''
+
+    def computeP_XX(X, numVals):
+        # compute P(Xi, Xj) for a pair of i and j
+        def computeP_XiXj(Xi, Xj, numVals_i, numVals_j):
+            counts = np.zeros((numVals_i, numVals_j))
+            # loop over all combinations of feature values (for Xi and Xj)
+            for xi in range(numVals_i):
+                for xj in range(numVals_j):
+                    # loop over all instances to accumulate the counts
+                    for m in range(len(Xi)):
+                        if (Xi[m] == xi) and (Xj[m] == xj): counts[xi][xj] += 1
+            # MAP estimation with smoothing
+            counts += PSEUDO_COUNTS
+            # TODO check denominator
+            P_XiXj = np.divide(counts, len(Xi) + numVals_i * numVals_j)
+            return P_XiXj
+
+        # compute P(Xi, Xj) for all i and j
+        N = np.shape(X)[1]
+
+        P_XX = createList_2d(N, N)
+        for i in range(N):
+            for j in range(N):
+                if i != j:
+                    P_XX[i][j] = computeP_XiXj(X[:, i], X[:, j], numVals[i], numVals[j])
+        return P_XX
+
     P_XXgY = []
     # loop over all possible y values
     for y_val in range(numVals[-1]):
@@ -78,62 +166,41 @@ def computeP_XX_Y(X, Y, numVals):
     return P_XXgY
 
 
-def computeP_XX(X, numVals):
-
-    def computeP_XiXj(Xi, Xj, numVals_i, numVals_j):
-        counts = np.zeros((numVals_i, numVals_j))
-        # loop over all combinations of feature values (for Xi and Xj)
-        for xi in range(numVals_i):
-            for xj in range(numVals_j):
-                # loop over all instances to accumulate the counts
-                for m in range(len(Xi)):
-                    if (Xi[m] == xi) and (Xj[m] == xj): counts[xi][xj] += 1
-        P_XiXj = np.divide(counts, len(Xi))
-        return P_XiXj
-
-    N = np.shape(X)[1] -1
-    P_XX = createListOfList(N, N)
-    for i in range(N):
-        for j in range(N):
-            if i != j:
-                P_XX[i][j] = computeP_XiXj(X[:,i], X[:,j], numVals[i],numVals[j])
-    return P_XX
-
 
 def computeP_XXY(X, Y, numVals):
     '''
-    :return: a tensor of (triple) joint distribution
+    :return: a matrix of (triple) joint distribution (X1 x X2)
+        - each entry is [Xi = xi][Xj = xj][Y = y]
     '''
-    joint_XXY = np.zeros((np.shape(X)[1],np.shape(X)[1], numVals[-1]))
-    # loop over Y_k
-    # for k in numVals[-1]:
-    for k in range(numVals[-1]):
-        # loop over all features
-        for i in range(np.shape(X)[1]):
-            # loop over all features
-            for j in range(np.shape(X)[1]):
+    def computeP_XiXjYk(Xi, Xj, numVals_i, numVals_j, Y, y_val):
+        M = len(Xi)
+        counts = np.zeros((numVals_i, numVals_j))
+        # loop over all possible values of X1, X2
+        for xi in range(numVals_i):
+            for xj in range(numVals_j):
+                # loop over instances to get the counts
+                for m in range(M):
+                    if Xi[m] == xi and Xj[m] == xj and Y[m] == y_val:
+                        counts[xi, xj] += 1
+        # smoothing
+        counts += PSEUDO_COUNTS
+        # TODO check denominator
+        P_XiXjYk = np.divide(1.0 * counts, M + 2 * numVals_i * numVals_j)
+        return P_XiXjYk
+
+    N = np.shape(X)[1]
+    P_XXY = createList_3d(numVals[-1], N, N)
+    # loop over all features: the upper triangular part
+    for y_val in range(numVals[-1]):
+        for i in range(N):
+            for j in range(i+1, N, 1):
                 if i != j:
-                    print i, j
-                    joint_XXY[i,j,k] = computeP_XiXjYk(X, i, j, numVals, Y, k)
-
-        sys.exit('STOP')
-    print joint_XXY
-    return joint_XXY
+                    P_XXY[y_val][i][j] = computeP_XiXjYk(X[:,i], X[:,j], numVals[i], numVals[j],
+                                                         Y, y_val)
+    return P_XXY
 
 
-def computeP_XiXjYk(X, i, j, numVals, Y, k):
-    counts = np.zeros((numVals[i],numVals[j]))
-    # xi, xj = numVals[i], numVals[j]
-    for xi in range(numVals[i]):
-        for xj in range(numVals[j]):
-            # loop over instances
-            for m in range(np.shape(X)[0]):
-                if X[m,i] == xi and X[m,j] == xj and Y[m] == k:
-                    counts[i,j]+=1
-    distribution = np.divide(1.0 * counts, np.shape(X)[0])
-    print distribution
-    sys.exit('STOP')
-    return distribution
+
 
 
 def buildNaiveBayesNet(X, Y, numVals):
@@ -189,6 +256,26 @@ def computeP_XgY(X, Y, numVals):
     return P_XgY
 
 
+def computeDistribution(Xi, numVals):
+    '''
+    Given a vector of discrete value and number of possible values, compute the distribution
+    :param Xi: a natural number valued vector
+    :param numVals: the number of possible values
+    :return: a probability distribution
+    '''
+    def getFrequency(vector, numVals):
+        counts = np.zeros(numVals, )
+        for value in vector: counts[value] += 1
+        return counts
+
+    counts = getFrequency(Xi, numVals)
+    # MAP estimation with smoothing
+    counts += PSEUDO_COUNTS
+    distribution = 1.0 * counts / np.sum(counts)
+    return distribution
+
+
+
 def getDataSubset(X, Y, idx_feature, val_feature):
     '''
     Reduce X and Y, by selecting {rows: X_idx == val_feature}
@@ -209,22 +296,4 @@ def getDataSubset(X, Y, idx_feature, val_feature):
     return X_reduced, Y_reduced
 
 
-def computeDistribution(vector, numVals):
-    '''
-    Given a vector of discrete value and number of possible values, compute the distribution
-    :param vector: a natural number valued vector
-    :param numVals: the number of possible values
-    :return: a probability distribution
-    '''
-    counts = getFrequency(vector, numVals)
-    # MAP estimation with smoothing
-    counts += PSEUDO_COUNTS
-    distribution = 1.0 * counts / np.sum(counts)
-    return distribution
 
-
-def getFrequency(vector, numVals):
-    counts = np.zeros(numVals,)
-    for value in vector:
-        counts[value] +=1
-    return counts

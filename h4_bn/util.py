@@ -23,13 +23,36 @@ def printDataMatrix(X):
         print m, X[m][:]
     sys.exit('STOP')
 
+def createList_2d(M,N):
+    list_2d = [[np.nan for n in range(N)] for m in range(M)]
+    return list_2d
 
-def createListOfList(m,n):
-    listOfList = [[0 for x in range(m)] for y in range(n)]
-    return listOfList
+def createList_3d(M,N,K):
+    list_3d = [[[np.nan for k in xrange(K)] for n in xrange(N)] for m in xrange(M)]
+    return list_3d
 
 
 def printSomeInstances(list, X):
     for rowIdx in list:
         print X[rowIdx,:]
 
+
+def printUpperTriangularPart(N):
+    for i in range(N):
+
+        sys.stdout.write('%d: ' % i)
+        for k in range(i):
+            sys.stdout.write('  ')
+
+        # print the upper triangular part, w/o the diag entries
+        for j in range(i+1, N, 1):
+            sys.stdout.write('%d ' % j)
+        sys.stdout.write('\n')
+
+
+def printMatrix(matrix):
+    M,N = np.shape(matrix)
+    for m in range(M):
+        for n in range(N):
+            sys.stdout.write('%.18f ' % matrix[m,n])
+        sys.stdout.write('\n')

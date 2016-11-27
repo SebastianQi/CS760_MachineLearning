@@ -1,7 +1,9 @@
 import numpy as np
+import sys
+
 from bayesNetAlg import *
 from util import *
-import sys
+from prim import *
 
 # load data
 fname_train, fname_test, option = getInputArgs()
@@ -19,8 +21,16 @@ if option == 'n':
 
 elif option == 't':
     # train a tree agumented bayes classifer
-    computeTreeWeights(X_train, Y_train, numVals)
-    buildTreeAugBayesNet(X_train, Y_train, numVals)
+    MI, P_Y, P_XgY, P_XXgY, P_XXY = computeTreeWeights(X_train, Y_train, numVals)
+    MST = prim(MI)
+    print 'TAN structure:', MST
+
+    # print graph
+
+    # make prediction
+    Y_hat, Y_prob = computePredictions_TAN(X_test, MST, P_Y, P_XgY, P_XXgY, P_XXY)
+    
+    # print test results
 
 else:
     raise ValueError('option must be either "n" or "t"')
