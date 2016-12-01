@@ -72,7 +72,37 @@ def buildTreeAugBayesNet(X, Y, numVals, parents):
     for n in range(np.shape(X)[1]):
         CPT.append(computeCPT_Xi(n, X, Y, numVals, parents[n]))
     CPT.append(computeDistribution(Y, numVals[-1]))
+
+    checkCPT(CPT, numVals, parents)
+
     return CPT
+
+
+def checkCPT(CPT, numVals, parents):
+
+    for n in [0,1,len(CPT)-1]:
+        CPT_n = CPT[n]
+        if n == len(CPT) - 1:
+            for y in range(numVals[-1]):
+                print('P(%d = %d) = %.17f' % (n, y, CPT_n[y]))
+
+        elif parents[n] == None:
+            for vi in range(numVals[n]):
+                for y in range(numVals[-1]):
+                    print('P(%d = %d | %d = %d) = %.17f'
+                        % (n, vi, len(CPT) - 1, y, CPT_n[y][vi]))
+
+        else:
+            for vi in range(numVals[n]):
+                for vj in range(numVals[parents[n]]):
+                    for y in range(numVals[-1]):
+                        print('P(%d = %d | %d = %d, %d = %d) = %.17f'
+                              % (n,vi,parents[n],vj,len(CPT)-1,y, CPT_n[vi][vj][y]))
+        print
+    sys.exit('BREAK')
+
+    return 0
+
 
 
 def computeCPT_Xi(f_idx, X, Y, numVals, parent):
@@ -84,10 +114,11 @@ def computeCPT_Xi(f_idx, X, Y, numVals, parent):
         return P_XigY  # [y][x]
 
     P_XgY = computeP_XgY(X, Y, numVals)
+    P_XY = computeP_XY(X, Y, numVals)
+
     # for the root of the tree
     if parent == None:
         return getP_XigY(f_idx, P_XgY, numVals)
-
     # for a generic node in the tree
     else:
         P_XiXjY = []
@@ -97,21 +128,34 @@ def computeCPT_Xi(f_idx, X, Y, numVals, parent):
             P_XiXjY.append(P_XiXjYk)
 
         P_XigY = getP_XigY(f_idx, P_XgY, numVals)
-
-        CPT_Xi = computeP_XigXjY(f_idx, parent, numVals, P_XiXjY, P_XigY)
-
-        return CPT_Xi
+        # get the CPT for the i-th node
+        return computeP_XigXjY(f_idx, parent, numVals, P_XiXjY, P_XY)
 
 
-
-def computeP_XigXjY(i, j, numVals, P_XiXjY, P_XigY):
+def computeP_XigXjY(i, j, numVals, P_XiXjY, P_XY):
     P_Xi_g_XjY = createList_3d(numVals[i], numVals[j], numVals[-1])
     for k in range(numVals[-1]):
         for vi in range(numVals[i]):
             for vj in range(numVals[j]):
-                P_Xi_g_XjY[vi][vj][k] = P_XiXjY[k][vi][vj] / P_XigY[k][vi]
+                # TODO I need to divde by P(X,Y), the joint, not the conditional!
+                P_Xi_g_XjY[vi][vj][k] = P_XiXjY[k][vi][vj] / P_XY[j][vj,k]
 
     return P_Xi_g_XjY
+
+
+def computeP_XY(X, Y, numVals):
+    M,N = np.shape(X)
+    P_XY = []
+    for n in range(N):
+        count = np.zeros((numVals[n],numVals[-1]))
+        for m in range(M):
+            count[X[m,n],Y[m]] +=1
+        # laplace
+        count +=PSEUDO_COUNTS
+
+        P_XiY = 1.0*count / np.sum(count)
+        P_XY.append(P_XiY)
+    return P_XY
 
 
 def printGraph_TAN(parents, metadata):
@@ -123,6 +167,7 @@ def printGraph_TAN(parents, metadata):
         else:
             print ('%s %s %s'% (featureNames[n], featureNames[parents[n]], featureNames[-1]))
     print
+
 
 def computeTanStructure(X_train, Y_train, numVals):
     MI, P_Y, P_XgY, P_XXgY, P_XXY = computeTreeWeights(X_train, Y_train, numVals)
