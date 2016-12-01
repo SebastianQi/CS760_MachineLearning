@@ -1,4 +1,6 @@
 from util import *
+from prim import *
+
 import numpy as np
 import scipy.io.arff as sparff
 import sys
@@ -31,33 +33,102 @@ def loadData(data_fname):
     return np.array(X), np.array(Y), metadata, numvals
 
 
-def printGraph_NaiveBayes(metadata):
-    num_features = len(metadata.names()) - 1
-    for n in range(num_features):
-        feature_info = metadata[metadata.names()[n]]
-        if feature_info[0] == 'nominal':
-            # the node and its parent (class for naive bayes)
-            print('%s %s' % (metadata.names()[n], metadata.names()[-1]))
-        else:
-            raise ValueError('Feature type must be "nominal"')
-    print
+
+## TAN
 
 
-def buildTreeAugBayesNet(X, Y, numVals, P_Y, P_XgY, P_XXgY, P_XXY):
-    N = np.shape(X)[1]
-
-    return 0
-
-
-
-def computePredictions_TAN(X_test, MST, P_Y, P_XgY, P_XXgY, P_XXY):
-    M = np.shape(X_test)[0]
+def computePredictions_TAN(X_test, CPT, parents, numVals):
+    [M,N] = np.shape(X_test)
     Y_hat, Y_prob = np.zeros(M,),np.zeros(M,)
     for m in range(M):
-        print X_test[m,:]
-        sys.exit('STOP_prediction_tan')
+        p_y = np.zeros(numVals[-1],)
+        for y in range(numVals[-1]):
+            p_y[y] = computeP_y_given_allx(y, X_test[m,:], CPT, parents)
+
+        p_y = np.divide(p_y, np.sum(p_y))
+        Y_prob[m] = max(p_y)
+        Y_hat[m] = np.argmax(p_y)
 
     return Y_hat, Y_prob
+
+def computeP_y_given_allx(y, x, CPT, parents):
+    p = CPT[-1][y]
+
+    for n in range(len(x)):
+
+        xi = x[n]
+        if parents[n] == None:
+            P_Xi_g_Xj_Y = CPT[n][y][xi]
+        else:
+            xj = x[parents[n]]
+            P_Xi_g_Xj_Y = CPT[n][xi][xj][y]
+
+        p *= P_Xi_g_Xj_Y
+    return p
+
+
+def buildTreeAugBayesNet(X, Y, numVals, parents):
+    CPT = []
+    for n in range(np.shape(X)[1]):
+        CPT.append(computeCPT_Xi(n, X, Y, numVals, parents[n]))
+    CPT.append(computeDistribution(Y, numVals[-1]))
+    return CPT
+
+
+def computeCPT_Xi(f_idx, X, Y, numVals, parent):
+
+    def getP_XigY(f_idx, P_XgY, numVals):
+        P_XigY = []
+        for k in range(numVals[-1]):
+            P_XigY.append(P_XgY[k][f_idx])
+        return P_XigY  # [y][x]
+
+    P_XgY = computeP_XgY(X, Y, numVals)
+    # for the root of the tree
+    if parent == None:
+        return getP_XigY(f_idx, P_XgY, numVals)
+
+    # for a generic node in the tree
+    else:
+        P_XiXjY = []
+        for k in range(numVals[-1]):
+            P_XiXjYk = computeP_XiXjYk(X[:, f_idx], X[:, parent],
+                                       numVals[f_idx], numVals[parent], Y, k)
+            P_XiXjY.append(P_XiXjYk)
+
+        P_XigY = getP_XigY(f_idx, P_XgY, numVals)
+
+        CPT_Xi = computeP_XigXjY(f_idx, parent, numVals, P_XiXjY, P_XigY)
+
+        return CPT_Xi
+
+
+
+def computeP_XigXjY(i, j, numVals, P_XiXjY, P_XigY):
+    P_Xi_g_XjY = createList_3d(numVals[i], numVals[j], numVals[-1])
+    for k in range(numVals[-1]):
+        for vi in range(numVals[i]):
+            for vj in range(numVals[j]):
+                P_Xi_g_XjY[vi][vj][k] = P_XiXjY[k][vi][vj] / P_XigY[k][vi]
+
+    return P_Xi_g_XjY
+
+
+def printGraph_TAN(parents, metadata):
+    featureNames = metadata.names()
+    for n in range(len(featureNames) -1):
+        # print the immediate parent, follow by Y
+        if parents[n] == None:
+            print ('%s %s' % (featureNames[n], featureNames[-1]))
+        else:
+            print ('%s %s %s'% (featureNames[n], featureNames[parents[n]], featureNames[-1]))
+    print
+
+def computeTanStructure(X_train, Y_train, numVals):
+    MI, P_Y, P_XgY, P_XXgY, P_XXY = computeTreeWeights(X_train, Y_train, numVals)
+    MI = copyUpperTolowerTrig(MI)
+    MST = findMaxSpanningTree_prim(MI)
+    return MST
 
 
 def computeTreeWeights(X, Y, numVals):
@@ -151,22 +222,6 @@ def computeP_XXY(X, Y, numVals):
     :return: a matrix of (triple) joint distribution (X1 x X2)
         - each entry is [Xi = xi][Xj = xj][Y = y]
     '''
-    def computeP_XiXjYk(Xi, Xj, numVals_i, numVals_j, Y, y_val):
-        M = len(Xi)
-        counts = np.zeros((numVals_i, numVals_j))
-        # loop over all possible values of X1, X2
-        for xi in range(numVals_i):
-            for xj in range(numVals_j):
-                # loop over instances to get the counts
-                for m in range(M):
-                    if Xi[m] == xi and Xj[m] == xj and Y[m] == y_val:
-                        counts[xi, xj] += 1
-        # smoothing
-        counts += PSEUDO_COUNTS
-        # TODO check denominator
-        P_XiXjYk = np.divide(1.0 * counts, M + 2 * numVals_i * numVals_j)
-        return P_XiXjYk
-
     N = np.shape(X)[1]
     P_XXY = createList_3d(numVals[-1], N, N)
     # loop over all features: the upper triangular part
@@ -179,6 +234,36 @@ def computeP_XXY(X, Y, numVals):
     return P_XXY
 
 
+def computeP_XiXjYk(Xi, Xj, numVals_i, numVals_j, Y, y_val):
+    M = len(Xi)
+    counts = np.zeros((numVals_i, numVals_j))
+    # loop over all possible values of X1, X2
+    for xi in range(numVals_i):
+        for xj in range(numVals_j):
+            # loop over instances to get the counts
+            for m in range(M):
+                if Xi[m] == xi and Xj[m] == xj and Y[m] == y_val:
+                    counts[xi, xj] += 1
+    # smoothing
+    counts += PSEUDO_COUNTS
+    # TODO check denominator
+    P_XiXjYk = np.divide(1.0 * counts, M + 2 * numVals_i * numVals_j)
+    return P_XiXjYk
+
+
+
+### Naive bayes
+
+def printGraph_NaiveBayes(metadata):
+    num_features = len(metadata.names()) - 1
+    for n in range(num_features):
+        feature_info = metadata[metadata.names()[n]]
+        if feature_info[0] == 'nominal':
+            # the node and its parent (class for naive bayes)
+            print('%s %s' % (metadata.names()[n], metadata.names()[-1]))
+        else:
+            raise ValueError('Feature type must be "nominal"')
+    print
 
 
 

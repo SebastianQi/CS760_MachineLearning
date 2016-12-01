@@ -1,6 +1,7 @@
 import sys
 import numpy as np
 
+
 SMALL_NUM = 1e-10
 PSEUDO_COUNTS = 1
 NUM_INPUT_ARGS = 3 
@@ -61,6 +62,13 @@ def printUpperTriangularPart(N):
             sys.stdout.write('%d ' % j)
         sys.stdout.write('\n')
 
+def printTree(MST_output):
+    print 'TAN structure:'
+    idx = [i for i in range(len(MST_output))]
+    for i in range(len(MST_output)):
+        sys.stdout.write('(%s, %s) ' % (idx[i], MST_output[i]))
+    print
+
 
 def printMatrix(matrix):
     M,N = np.shape(matrix)
@@ -76,3 +84,24 @@ def copyUpperTolowerTrig(matrix):
         for j in range(i, N):
             matrix[j][i] = matrix[i][j]
     return matrix
+
+
+
+def printCPT(P_Y, P_XgY, P_XXgY, P_XXY, numVals):
+
+    print type(P_XgY)
+
+    for k in range(numVals[-1]):
+        P_Xgy = P_XgY[k]
+        for i in range(len(P_Xgy)):
+            print P_Xgy[i]
+
+
+
+
+
+
+    print type(P_XXgY)
+    print type(P_XXY)
+
+    sys.exit('STOP')

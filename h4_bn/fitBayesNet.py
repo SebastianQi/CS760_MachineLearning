@@ -3,12 +3,13 @@ import sys
 
 from bayesNetAlg import *
 from util import *
-from prim import *
+
 
 # load data
 fname_train, fname_test, option = getInputArgs()
 X_train, Y_train, metadata, numVals = loadData(fname_train)
 X_test, Y_test, _, _ = loadData(fname_test)
+
 
 
 if option == 'n':
@@ -20,23 +21,15 @@ if option == 'n':
     printTestResults(Y_hat, Y_prob, Y_test, metadata)
 
 elif option == 't':
-    # train a tree agumented bayes classifer
-    MI, P_Y, P_XgY, P_XXgY, P_XXY = computeTreeWeights(X_train, Y_train, numVals)
-    MI = copyUpperTolowerTrig(MI)
-    MST = findMaxSpanningTree_prim(MI)
-
-    print 'TAN structure:'
-    idx = [i for i in range(len(MST))]
-    MST
-    for i in range(len(MST)):
-        print idx[i],MST[i]
-    sys.exit('STOP')
-    # print graph
-
+    # build the max spanning tree w.r.t to conditional mutual info
+    MST = computeTanStructure(X_train, Y_train, numVals)
+    # print tree structure
+    printGraph_TAN(MST, metadata)
+    # compute the the conditional probability
+    CPT = buildTreeAugBayesNet(X_train, Y_train, numVals, MST)
     # make prediction
-    Y_hat, Y_prob = computePredictions_TAN(X_test, MST, P_Y, P_XgY, P_XXgY, P_XXY)
-    
-    # print test results
+    Y_hat, Y_prob = computePredictions_TAN(X_test, CPT, MST, numVals)
+    printTestResults(Y_hat, Y_prob, Y_test, metadata)
 
 else:
     raise ValueError('option must be either "n" or "t"')
