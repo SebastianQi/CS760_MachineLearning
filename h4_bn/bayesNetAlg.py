@@ -68,7 +68,7 @@ def buildTreeAugBayesNet(X, Y, numVals, parents):
     for n in range(np.shape(X)[1]):
         CPT.append(computeCPT_Xi(n, X, Y, numVals, parents[n]))
     CPT.append(computeDistribution(Y, numVals[-1]))
-    checkCPT(CPT, numVals, parents)
+    # checkCPT(CPT, numVals, parents)
 
     return CPT
 

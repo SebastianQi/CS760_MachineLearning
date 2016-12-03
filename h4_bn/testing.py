@@ -1,21 +1,13 @@
 import numpy as np
 from prim import *
+from util import *
+# import numpy.random
 
-A = [[0, 4, 0, 0, 0, 0, 0, 8, 0],
-     [4, 0, 8, 0, 0, 0, 0, 11, 0],
-     [0, 8, 0, 7, 0, 4, 0, 0, 2],
-     [0, 0, 7, 0, 9, 14, 0, 0, 0],
-     [0, 0, 0, 9, 0, 10, 0, 0, 0],
-     [0, 0, 4, 14, 10, 0, 2, 0, 0],
-     [0, 0, 0, 0, 0, 2, 0, 1, 6],
-     [8, 11, 0, 0, 0, 0, 1, 0, 7],
-     [0, 0, 2, 0, 0, 0, 6, 7, 0]]
+# print range(10,15,1)
+# print np.random.choice(range(10,15,1), 3, replace=False)
 
-V = [0, 1, 2, 3, 4, 5, 6, 7, 8]
+x = np.reshape(np.array(range(12)), (4,3))
+print x
+idx = np.array([1,2,3])
 
-A = np.array(A)
-
-P = prim(A)
-
-print P
-print [None, 0, 5, 2, 3, 6, 7, 0, 2]
+print x[idx, 2]

@@ -1,0 +1,138 @@
+%----------------------------------------------------------------------------------------
+%	PACKAGES AND OTHER DOCUMENT CONFIGURATIONS
+%----------------------------------------------------------------------------------------
+\documentclass[paper=a4, fontsize=11pt]{scrartcl} % A4 paper and 11pt font size
+\usepackage[T1]{fontenc} % Use 8-bit encoding that has 256 glyphs
+\usepackage{fourier} % Use the Adobe Utopia font for the document - comment this line to return to the LaTeX default
+\usepackage[english]{babel} % English language/hyphenation
+\usepackage{amsmath,amsfonts,amsthm} % Math packages
+\usepackage{lipsum} % Used for inserting dummy 'Lorem ipsum' text into the template
+\usepackage{sectsty} % Allows customizing section commands
+\allsectionsfont{\centering \normalfont\scshape} % Make all sections centered, the default font and small caps
+\usepackage{fancyhdr} % Custom headers and footers
+\usepackage{amsmath}
+\usepackage{graphics}
+\usepackage{graphicx}
+
+\pagestyle{fancyplain} % Makes all pages in the document conform to the custom headers and footers
+\fancyhead{} % No page header - if you want one, create it in the same way as the footers below
+\fancyfoot[L]{} % Empty left footer
+\fancyfoot[C]{} % Empty center footer
+\fancyfoot[R]{\thepage} % Page numbering for right footer
+\renewcommand{\headrulewidth}{0pt} % Remove header underlines
+\renewcommand{\footrulewidth}{0pt} % Remove footer underlines
+\setlength{\headheight}{13.6pt} % Customize the height of the header
+
+\numberwithin{equation}{section} % Number equations within sections (i.e. 1.1, 1.2, 2.1, 2.2 instead of 1, 2, 3, 4)
+\numberwithin{figure}{section} % Number figures within sections (i.e. 1.1, 1.2, 2.1, 2.2 instead of 1, 2, 3, 4)
+\numberwithin{table}{section} % Number tables within sections (i.e. 1.1, 1.2, 2.1, 2.2 instead of 1, 2, 3, 4)
+
+\setlength\parindent{0pt} % Removes all indentation from paragraphs - comment this line for an assignment with lots of text
+
+%----------------------------------------------------------------------------------------
+%	TITLE SECTION
+%----------------------------------------------------------------------------------------
+
+\newcommand{\horrule}[1]{\rule{\linewidth}{#1}} % Create horizontal rule command with 1 argument of height
+
+\title{	
+\normalfont \normalsize 
+\horrule{0.5pt} \\[0.4cm] % Thin top horizontal rule
+\huge CS 760 HW4: Bayes net\\ % The assignment title
+\horrule{2pt} \\[0.5cm] % Thick bottom horizontal rule
+}
+
+\author{Qihong Lu} % Your name
+\date{\normalsize\today} % Today's date or a custom date
+
+\begin{document}
+
+\maketitle % Print the title
+
+%----------------------------------------------------------------------------------------
+%	PROBLEM 1
+%----------------------------------------------------------------------------------------
+
+\section*{Question1}
+
+To run the program, type the following command: 
+$$ \text{./bayes <train-set-file> <test-set-file> <n|t>} $$ 
+where 'n' corresponds to the naive bayes algorithm and 't' corresponds to the tree augmented bayes net. \\\\
+
+Code: 
+\begin{itemize}
+	\item fitBayesNet.py: fits bayesian network with binary classification 
+	\item bayesNetAlg.py: implements bayesian network with binary classification 
+	\item util.py: the definitions of some constants and helper functions 
+	\item prim.py: obtains max spanning tree with the Prim's algorithm 
+	\item kFoldsCV.py: uses k-Folds cross validation to compare naive bayes and tree augmented bayes
+\end{itemize}
+ 
+\hfill 
+
+Dependencies: 
+\begin{itemize}
+  \item pyhton 2.7 
+  \item numpy 
+  \item scipy 
+  \item sys
+\end{itemize}
+
+
+
+
+%----------------------------------------------------------------------------------------
+%	PROBLEM 2
+%----------------------------------------------------------------------------------------
+
+\section*{Question2}
+\textbf{For this part, use stratified 10-fold cross validation on the chess-KingRookVKingPawn.arff data set to compare naive Bayes and TAN. Be sure to use the same partitioning of the data set for both algorithms. Report the accuracy the models achieve for each fold and then use a paired t-test to determine the statistical significance of the difference in accuracy. Report both the value of the t-statistic and the resulting p value.\\}
+
+Here's a table summarize the accuracy obtained with 10-Folds cross validation. 
+
+\begin{center}
+  \begin{tabular}{ l |c|c}
+    \hline
+ 	& Naive Bayes &TAN \\ \hline
+	1 & 0.884375   & 0.9   \\ 	\hline     
+	2 &  0.871875   & 0.921875  \\ 	\hline
+	3 &  0.859375  &  0.934375  \\ 	\hline
+	4 &  0.884375 &   0.925     \\ 	\hline
+	5 & 0.915625  &  0.946875  \\ 	\hline
+	6 & 0.875     &  0.940625  \\ 	\hline
+	7 & 0.903125  &  0.95      \\ 	\hline
+	8 & 0.86875   &  0.91875   \\ 	\hline
+	9 & 0.859375  &  0.90625   \\ 	\hline
+	10 & 0.86392405 & 0.91455696\\ 	\hline
+  \end{tabular}
+\end{center}
+
+\bigbreak
+
+
+\textbf{P value and statistical significance: }
+
+-  The two-tailed P value is less than 0.0001 
+
+
+\textbf{Confidence interval: }
+
+-  The mean of Group One minus Group Two equals -0.0472507910 
+
+-  95\% confidence interval of this difference: From -0.0639878676 to -0.0305137144 
+
+\textbf{Intermediate values used in calculations: }
+
+-  t = 5.9312 
+
+-  df = 18 
+
+-  standard error of difference = 0.008 
+
+\bigbreak
+
+\textbf{Conclusion:}
+
+On the chess-KingRookVKingPawn.arff data set, the tree augmented bayes (TAN) is significantly more accurate than the naive bayes algorithm, t(18) = 5.9312, p < 0.0001. 
+
+\end{document}
