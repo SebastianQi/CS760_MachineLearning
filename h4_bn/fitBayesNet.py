@@ -1,6 +1,3 @@
-import numpy as np
-import sys
-
 from bayesNetAlg import *
 from util import *
 
@@ -9,8 +6,6 @@ from util import *
 fname_train, fname_test, option = getInputArgs()
 X_train, Y_train, metadata, numVals = loadData(fname_train)
 X_test, Y_test, _, _ = loadData(fname_test)
-
-
 
 if option == 'n':
     # print the structure of the naive bayes

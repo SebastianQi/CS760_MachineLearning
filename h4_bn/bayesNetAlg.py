@@ -3,7 +3,6 @@ from prim import *
 
 import numpy as np
 import scipy.io.arff as sparff
-import sys
 
 
 def loadData(data_fname):
@@ -35,8 +34,6 @@ def loadData(data_fname):
 
 
 ## TAN
-
-
 def computePredictions_TAN(X_test, CPT, parents, numVals):
     [M,N] = np.shape(X_test)
     Y_hat, Y_prob = np.zeros(M,),np.zeros(M,)
@@ -48,7 +45,6 @@ def computePredictions_TAN(X_test, CPT, parents, numVals):
         p_y = np.divide(p_y, np.sum(p_y))
         Y_prob[m] = max(p_y)
         Y_hat[m] = np.argmax(p_y)
-
     return Y_hat, Y_prob
 
 def computeP_y_given_allx(y, x, CPT, parents):
@@ -72,7 +68,6 @@ def buildTreeAugBayesNet(X, Y, numVals, parents):
     for n in range(np.shape(X)[1]):
         CPT.append(computeCPT_Xi(n, X, Y, numVals, parents[n]))
     CPT.append(computeDistribution(Y, numVals[-1]))
-
     checkCPT(CPT, numVals, parents)
 
     return CPT
@@ -80,7 +75,8 @@ def buildTreeAugBayesNet(X, Y, numVals, parents):
 
 def checkCPT(CPT, numVals, parents):
 
-    for n in [0,1,len(CPT)-1]:
+    # for n in [0,1,len(CPT)-1]:
+    for n in range(len(CPT)):
         CPT_n = CPT[n]
         if n == len(CPT) - 1:
             for y in range(numVals[-1]):
@@ -99,9 +95,7 @@ def checkCPT(CPT, numVals, parents):
                         print('P(%d = %d | %d = %d, %d = %d) = %.17f'
                               % (n,vi,parents[n],vj,len(CPT)-1,y, CPT_n[vi][vj][y]))
         print
-    sys.exit('BREAK')
 
-    return 0
 
 
 
@@ -113,49 +107,26 @@ def computeCPT_Xi(f_idx, X, Y, numVals, parent):
             P_XigY.append(P_XgY[k][f_idx])
         return P_XigY  # [y][x]
 
-    P_XgY = computeP_XgY(X, Y, numVals)
-    P_XY = computeP_XY(X, Y, numVals)
+    def computeP_XigXjY(X, Y, i, j, numVals):
+        P_Xi_g_XjY = createList_3d(numVals[i], numVals[j], numVals[-1])
+        for k in range(numVals[-1]):
+            for vi in range(numVals[i]):
+                for vj in range(numVals[j]):
+                    # get the conditional universe (Xj = vj, Y = k)
+                    X_red, Y_red = getDataSubset2(X, Y, j, vj, k)
+                    # compute P(Xi = vi | Xj = vj, Y = k)
+                    P_Xi_g_XjY[vi][vj][k] = 1.0 * (np.sum(X_red[:, i] == vi) + PSEUDO_COUNTS) / \
+                                            (len(X_red[:, i]) + numVals[i])
+        return P_Xi_g_XjY
+
 
     # for the root of the tree
     if parent == None:
+        P_XgY = computeP_XgY(X, Y, numVals)
         return getP_XigY(f_idx, P_XgY, numVals)
     # for a generic node in the tree
     else:
-        P_XiXjY = []
-        for k in range(numVals[-1]):
-            P_XiXjYk = computeP_XiXjYk(X[:, f_idx], X[:, parent],
-                                       numVals[f_idx], numVals[parent], Y, k)
-            P_XiXjY.append(P_XiXjYk)
-
-        P_XigY = getP_XigY(f_idx, P_XgY, numVals)
-        # get the CPT for the i-th node
-        return computeP_XigXjY(f_idx, parent, numVals, P_XiXjY, P_XY)
-
-
-def computeP_XigXjY(i, j, numVals, P_XiXjY, P_XY):
-    P_Xi_g_XjY = createList_3d(numVals[i], numVals[j], numVals[-1])
-    for k in range(numVals[-1]):
-        for vi in range(numVals[i]):
-            for vj in range(numVals[j]):
-                # TODO I need to divde by P(X,Y), the joint, not the conditional!
-                P_Xi_g_XjY[vi][vj][k] = P_XiXjY[k][vi][vj] / P_XY[j][vj,k]
-
-    return P_Xi_g_XjY
-
-
-def computeP_XY(X, Y, numVals):
-    M,N = np.shape(X)
-    P_XY = []
-    for n in range(N):
-        count = np.zeros((numVals[n],numVals[-1]))
-        for m in range(M):
-            count[X[m,n],Y[m]] +=1
-        # laplace
-        count +=PSEUDO_COUNTS
-
-        P_XiY = 1.0*count / np.sum(count)
-        P_XY.append(P_XiY)
-    return P_XY
+        return computeP_XigXjY(X, Y, f_idx, parent, numVals)
 
 
 def printGraph_TAN(parents, metadata):
@@ -213,7 +184,6 @@ def computeMI_XiXjgYk(P_XiXjYk, P_XiXj_Yk, P_Xi_Yk, P_Xj_Yk, numVals_i, numVals_
     for xi in range(numVals_i):
         for xj in range(numVals_j):
             mi += P_XiXjYk[xi][xj] * np.log2(P_XiXj_Yk[xi, xj] / (P_Xi_Yk[xi] * P_Xj_Yk[xj]))
-
     return mi
 
 
@@ -237,7 +207,6 @@ def computeP_XX_Y(X, Y, numVals):
                         if (Xi[m] == xi) and (Xj[m] == xj): counts[xi][xj] += 1
             # MAP estimation with smoothing
             counts += PSEUDO_COUNTS
-            # TODO check denominator
             P_XiXj = np.divide(counts, len(Xi) + numVals_i * numVals_j)
             return P_XiXj
 
@@ -291,10 +260,8 @@ def computeP_XiXjYk(Xi, Xj, numVals_i, numVals_j, Y, y_val):
                     counts[xi, xj] += 1
     # smoothing
     counts += PSEUDO_COUNTS
-    # TODO check denominator
-    P_XiXjYk = np.divide(1.0 * counts, M + 2 * numVals_i * numVals_j)
+    P_XiXjYk = 1.0 * counts/(M + 2 * numVals_i * numVals_j)
     return P_XiXjYk
-
 
 
 ### Naive bayes
@@ -393,5 +360,15 @@ def getDataSubset(X, Y, idx_feature, val_feature):
     Y_reduced = Y[idx_target]
     return X_reduced, Y_reduced
 
+def getDataSubset2(X, Y, f_idx, f_val, y_val):
+    '''
+    Reduce X and Y, by selecting {rows: X_idx == val_feature And y = target_val}
+    '''
+    # select rows, w.r.t to a particular feature with a particular value
+    idx_target = np.logical_and(X[:, f_idx] == f_val, Y == y_val)
+    # subset X and Y
+    X_reduced = X[idx_target,:]
+    Y_reduced = Y[idx_target]
+    return X_reduced, Y_reduced
 
 

@@ -1,5 +1,4 @@
 import numpy as np
-import sys
 # prim - minimum spanning tree
 # Tim Wilson, 2-25-2002
 
