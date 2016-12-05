@@ -1,5 +1,5 @@
 # CS760_ML_hw
-The assignment repo for <a href = "https://www.biostat.wisc.edu/~craven/cs760/index.html">CS 760</a>, a graduate  machine learning course, taught by Professor <a href = "https://www.biostat.wisc.edu/~craven/">Mark Craven</a> at UW-Madison. 
+This is an assignment repo for <a href = "https://www.biostat.wisc.edu/~craven/cs760/index.html">CS 760</a>, a graduate  machine learning course, taught by Professor <a href = "https://www.biostat.wisc.edu/~craven/">Mark Craven</a> at UW-Madison. 
 
 
 ###Programming Assignments
