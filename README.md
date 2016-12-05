@@ -13,5 +13,3 @@ The assignment repo for <a href = "https://www.biostat.wisc.edu/~craven/cs760/in
  * scipy 
  * numpy 
  * matplotlib 
- * sys 
- 
