@@ -6,7 +6,7 @@ This is an assignment repo for <a href = "https://www.biostat.wisc.edu/~craven/c
 1. Decision Tree (basically ID3), classification 
 2. K Nearest Neighbor, classification and regression 
 3. Perceptron and Neural network, classification  
-4. Naive bayes and tree augmented bayes net, binary classification. 
+4. Naive bayes and tree augmented bayes net, binary classification
 
 ### Dependencies 
 * Python 2.7 
