@@ -9,10 +9,14 @@
 \usepackage{lipsum} % Used for inserting dummy 'Lorem ipsum' text into the template
 \usepackage{sectsty} % Allows customizing section commands
 \allsectionsfont{\centering \normalfont\scshape} % Make all sections centered, the default font and small caps
+
 \usepackage{fancyhdr} % Custom headers and footers
-\usepackage{amsmath}
 \usepackage{graphics}
 \usepackage{graphicx}
+\usepackage{mathtools}
+\DeclarePairedDelimiter\ceil{\lceil}{\rceil}
+\DeclarePairedDelimiter\floor{\lfloor}{\rfloor}
+
 
 \pagestyle{fancyplain} % Makes all pages in the document conform to the custom headers and footers
 \fancyhead{} % No page header - if you want one, create it in the same way as the footers below
@@ -67,9 +71,28 @@ Similarly, the unit h2 is representing an AND function over X3 and X4. Finally, 
 \newpage
 \section*{Question2}
 \textbf{Consider the concept class C in which each concept is an interval on the line of real numbers. Each training instance is represented by a single real-valued feature x, and a binary class label \boldmath$y \in \{0, 1\}$. A learned concept is represented by an interval [a, a + b] where a is real value and b is a positive real value, and the concept predicts y=1 for values of x in the interval, and y=0 otherwise. Show that C is PAC learnable.}
+\bigbreak
 
+The hypothesis space, H consists of all possible intervals in the form of [a, a + b]. The VC-dimension(H) is 4. Because when there are 4 instances: $(x_1,y_1),(x_2,y_2),(x_3,y_3),(x_4,y_4)$ with $x_1< x_2< x_3< x_4$ and $y_1 = y_3 \neq y_2 = y_4$, there is no $h \in H$ that can achieve zero training error. 
 
+Because we have a continuous hypothesis space, we can use the following bound for the sample complexity: 
+$$
+m \geq \frac{1}{\epsilon} (4 \text{log}_2 \frac{2}{\delta} + 8 \text{VC-dim}(H) \text{log}_2 \frac{13}{\epsilon}) = \frac{1}{\epsilon} (4 \text{log}_2 \frac{2}{\delta} + 32 \text{log}_2 \frac{13}{\epsilon})
+$$
 
+Therefore, m grows polynomially in $\frac{1}{\epsilon}$, $\frac{1}{\delta}$. 
+
+\bigbreak
+I still need to show that we can find a consistent hypothesis in polynomial time. 
+
+Given a training set $D = \{x_i,y_i\}$, i = 1,2,..., N. 
+
+Let $c = y_1 \in {0,1}$. Loop over $y_i$ from 1 to m. When $y_i \neq c$, set a = $x_i$, c = $y_i$, t = i. Keep looping over value of $y_i$, start from i = t. When $y_i \neq c$, set b = $x_i$ - a. 
+
+This algorithm will find a consistent hypothesis, when exists, in linear time w.r.t to the number of training example.  
+
+\bigbreak 
+Therefore, C is PAC learnable. 
 
 \newpage
 \section*{Question3}
@@ -83,32 +106,155 @@ Similarly, the unit h2 is representing an AND function over X3 and X4. Finally, 
 \end{tabular}
 \end{center}
 
+At time t, given the training instance $x^{(t)}$, the Halving algorithm reduces the version space, $VS_t$, by remove all hypotheses, $h \in H$, that are inconsistance with $x^{(t)}$. 
+\bigbreak
 
+Initiailly, $VS_0 = 
+\{
+x_1 \land x_2, x_1 \land x_3, x_2 \land x_3,
+x_1 \land \neg x_2, x_1 \land \neg x_3, x_2 \land \neg x_3,
+\neg x_1 \land x_2, \neg x_1 \land x_3, \neg x_2 \land x_3
+\}$, where element in the version space in the form of $x_i \land x_j$ represents a hypothesis that predicts positive when $x_i \land x_j$ is satisfied. 
+\bigbreak
+Step 1: Given the first instance $[x_1,x_2,x_3] = [T,F,F]$ with y = Positive. The majority vote of $VS_0$ is Positive, and the predictions of the inidividual hypothesis are listed here: 
+
+\begin{center}
+$
+\begin{array}{c|c|c}
+\hline
+\text{hypothesis} & \text{prediction} & \text{remove?} \\
+\hline
+x_1 \land x_2 & \text{Postive} & \\ 
+x_1 \land x_3 & \text{Postive} & \\ 
+x_2 \land x_3 & \text{Negative} & T \\ 
+x_1 \land \neg x_2 & \text{Postive} & \\ 
+x_1 \land \neg x_3 & \text{Postive} & \\ 
+x_2 \land \neg x_3 & \text{Postive} & \\ 
+\neg x_1 \land x_2 & \text{Negative} & T \\ 
+\neg x_1 \land x_3 & \text{Negative} & T \\ 
+\neg x_2 \land x_3 & \text{Postive} &  \\ 
+\hline
+\end{array}
+$
+\end{center}
+
+Update $VS_1 = 
+\{
+x_1 \land x_2, x_1 \land x_3, 
+x_1 \land \neg x_2, x_1 \land \neg x_3, x_2 \land \neg x_3,
+\neg x_2 \land x_3
+\}$
+
+\smallbreak
+Step 2: Given the 2nd instance $[x_1,x_2,x_3] = [F,T,T]$ with y = Negative. The majority vote $VS_1$ is Positive, and the predictions of the inidividual hypothesis are listed here: 
+\begin{center}
+$
+\begin{array}{c|c|c}
+\hline
+\text{hypothesis} & \text{prediction} & \text{remove?} \\
+\hline
+x_1 \land x_2 & \text{Postive} & \\ 
+x_1 \land x_3 & \text{Postive} & \\ 
+x_1 \land \neg x_2 & \text{Negative} & T \\ 
+x_1 \land \neg x_3 & \text{Negative} & T \\ 
+x_2 \land \neg x_3 & \text{Postive} & \\ 
+\neg x_2 \land x_3 & \text{Postive} &  \\ 
+\hline
+\end{array}
+$
+\end{center}
+Update $VS_2 = 
+\{
+x_1 \land x_2, x_1 \land x_3, 
+x_2 \land \neg x_3,
+\neg x_2 \land x_3
+\}$
 
 
 
 \newpage
 \section*{Question4}
 \textbf{In this same setting, suppose the learner can pick the next training instance it will be given. That is, the learner can pick the feature vector part of the instance; the class label will be provided by the teacher. Which instance should it ask for next? Justify your answer.}
+\bigbreak 
+After the 2nd step, the version space is $VS_2 = 
+\{
+x_1 \land x_2, x_1 \land x_3, 
+x_2 \land \neg x_3,
+\neg x_2 \land x_3
+\}$
+\smallbreak
+I think asking the y value of the instance $[x_1,x_2,x_3] = [F,F,F]$ is informative (there are other instances with the same effect). Because half of the hypotheses will predict Postive and the remaining half will predict Negative:  
 
+\begin{center}
+$
+\begin{array}{c|c}
+\hline
+\text{hypothesis} & \text{prediction} \\
+\hline
+x_1 \land x_2 & \text{Negative} \\ 
+x_1 \land x_3 & \text{Negative}  \\ 
+x_2 \land \neg x_3 & \text{Postive} \\ 
+\neg x_2 \land x_3 & \text{Postive}  \\ 
+\hline
+\end{array}
+$
+\end{center}
 
-
+In this case, no matter what the truth is, we can reduce the size of the Version space by a half. 
 
 \newpage
 \section*{Question5}
 \textbf{How many mistakes will the Halving algorithm make for this concept class in the worst case? Justify your answer.}
+\bigbreak 
 
 
+By assumption, the concept class that consists of disjunctions of exactly two literals out of n features. And each literal is a feature or its negation, and at most one literal can be negated. Therefore, there are 
+$
+{{n}\choose{2}} \times 3 = 3(n-1)n
+$
+possible hypotheses. 
+\smallbreak
+In the worsest case, assume the Halving algorithm always make mistakes. Namely, for each $x_i$, majority of the hypotheses are inconsistent with $x_i$. Then we know that at each iteration, the hypotheses space shrink by at least $\frac{1}{2}$. So the havling algorithm will make at most  $\floor*{\text{log}_2 |H|}$ mistakes. Plug in the size of |H|, I get $\floor*{\text{log}_2 3(n-1)n}$. 
+\bigbreak
+
+For our case when n = 3. $\floor*{\text{log}_2 3(3-1)3} = \floor*{\text{log}_2 9} = \floor*{3.1699 \cdots} = 3$
 
 
 \newpage
 \section*{Question6}
 \textbf{Given the initial Bayes net parameters and training set depicted below, show how the network parameters would be updated after one step of the EM procedure. The `?' symbol indicates that the value for the variable A is missing in a given training instance.}
 \begin{center}
-	\includegraphics[scale=.5]{pics/hw5_6.png}
+	\includegraphics[scale=.4]{pics/hw5_6.png}
 \end{center}
+\bigbreak
 
+\textbf{E-step}: fill in the missing values in the A column 
+\smallbreak
+For the 1st missing instance: 
+\begin{flalign*} 
+P(a | b, c) &= \frac{P(a,b,c)}{P(a,b,c) + P(\neg a,b,c)} = \frac{P(a)P(b)P(c|a,b)}{P(a)P(b)P(c|a,b) + P(\neg a)P(b)P(c|\neg a,b)} \\
+&= \frac{.7 \times .5 \times .8}{.7 \times .5 \times .8 + .3 \times .5 \times .3} \approx .86 \\ 
+P(\neg a | b, c) &= 1 - P(a | b, c) \approx .14
+\end{flalign*}
 
+\smallbreak
+For the 5th instance, which is also missing: 
+\begin{flalign*} 
+P(a|\neg b,c) &= \frac{P(a, \neg b,c)}{P(a, \neg b,c) + P(\neg a, \neg b,c)} = \frac{P(a)P(\neg b)P(c|a,\neg b)}{P(a)P(\neg b)P(c|a,\neg b) + P(\neg a)P( \neg b)P(c|\neg a,\neg b)} \\
+&= \frac{.7 \times .5 \times .4}{.7 \times .5 \times .4 + .3 \times .5 \times .9} \approx .51 \\ 
+P(\neg a|\neg b,c) &= 1 - P(a|\neg b,c) \approx .49
+\end{flalign*}
+
+\bigbreak
+
+\textbf{M-step}: re-estimate the conditional probability table using expected counts 
+\begin{flalign*} 
+P(a) &=   \frac{4 + .86 + .51}{8} = .67125\\ 
+P(c | a, b) &=  \frac{E \# (c, a, b)}{E \# (a, b)} = \frac{.86 + 1}{2 + .86} \approx .65\\ 
+P(c | \neg a, b) &=  \frac{E \# (c, \neg a, b)}{E \# (\neg a, b)} = \frac{.14 + 1 }{2 + .14} \approx .53\\
+P(c | a, \neg b) &=  \frac{E \# (c, a, \neg b)}{E \# (a, \neg b)} = \frac{.51 + 1}{2 + .51} \approx .60\\
+P(c | \neg a, \neg b) &= \frac{E \# (c, \neg a, \neg b)}{E \# (\neg a, \neg b)} = \frac{.49}{1 + .49} \approx 33\\
+\end{flalign*}
 
 \newpage
 \section*{Question7}
@@ -123,25 +269,25 @@ At the 2nd iteration, there are n-1 candidate features, I need to evaluate n-1 m
 At the r-th iteration, there are n-r candidate features, I need to evaluate n-r models. ($r \leq n$)
 \bigbreak
 
-Therefore, to chose r features, we need to evaluate $n (n-1) \cdots (n-r) $ models. \\
+Therefore, to choose r features, we need to evaluate $n + (n-1) + \cdots + (n-r) $ models. \\
 
-When evaluating each model, a k-folds cross validation is required. So in total, we need to fit $kn (n-1) \cdots (n-r)$ models. 
+When evaluating each model, a k-folds cross validation is required. So in total, we need to fit $k(n + (n-1) + \cdots + (n-r))$ models. 
 
 \newpage
 \section*{Question8}
 \textbf{Now suppose instead you are using backward elimination for the same task. Again, assume that the search process stops after selecting >r features and does not consider feature subsets smaller than this. Given a single training set, how many models are learned in the process of finding a feature subset of size r?}
-
+\bigbreak
 For backward elimination, we begin with the full model (the model with all features) and remove the least informative feature at each iteration, where the informativeness of a given feature is determined based on the cross-validated performance. 
 \bigbreak
 1st iteration: there are n possible features can be removed, need to evaluate n models. \\
 2nd iteration: there are n-1 possible features can be removed, need to evaluate n-1 models. \\
 ......\\
-r-th iteration: there are n-r possible features can be removed, need to evaluate n-r models. ($r \leq n$)
+(n-r)-th iteration: there are n-r possible features can be removed, need to evaluate n-(n-r) = r models. ($r \leq n$)
 \bigbreak
 
-Therefore, to chose r features, we need to evaluate $n (n-1) \cdots (n-r) $ models. \\
+Therefore, to remove (n-r) features, we need to evaluate $n + (n-1) + \cdots + (n-(n-r))$ models. \\
 
-When evaluating each model, a k-folds cross validation is required. So in total, we need to fit $kn (n-1) \cdots (n-r)$ models. 
+When evaluating each model, a k-folds cross validation is required. So in total, we need to fit $k(n + (n-1) + \cdots + (n-(n-r)))$ models. 
 
 
 
