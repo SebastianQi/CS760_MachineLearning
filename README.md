@@ -7,6 +7,7 @@ This is an assignment repo for <a href = "https://www.biostat.wisc.edu/~craven/c
 2. K Nearest Neighbor, classification and regression 
 3. Perceptron and Neural network, classification  
 4. Naive bayes and tree augmented bayes net, binary classification
+5. a written assignment
 
 ### Dependencies 
 * Python 2.7 
