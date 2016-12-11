@@ -88,11 +88,8 @@ I still need to show that we can find a consistent hypothesis in polynomial time
 Given a training set $D = \{x_i,y_i\}$, i = 1,2,..., N. 
 
 Let $c = y_1 \in {0,1}$. Loop over $y_i$ from 1 to m. When $y_i \neq c$, set a = $x_i$, c = $y_i$, t = i. Keep looping over value of $y_i$, start from i = t. When $y_i \neq c$, set b = $x_i$ - a. 
-
-This algorithm will find a consistent hypothesis, when exists, in linear time w.r.t to the number of training example.  
-
 \bigbreak 
-Therefore, C is PAC learnable. 
+This algorithm will find a consistent hypothesis (assuming consistent hypothesis exists) in linear time w.r.t to the number of training example. Therefore, C is PAC learnable. 
 
 \newpage
 \section*{Question3}
@@ -200,7 +197,7 @@ x_2 \land \neg x_3 & \text{Postive} \\
 $
 \end{center}
 
-In this case, no matter what the truth is, we can reduce the size of the Version space by a half. 
+In this case, no matter what the true label (y) is, we can reduce the current size of the Version space by a half. 
 
 \newpage
 \section*{Question5}
@@ -295,8 +292,59 @@ When evaluating each model, a k-folds cross validation is required. So in total,
 \section*{Question9}
 \textbf{Consider the relational learning task defined below. List all of the literals that would be considered by FOIL algorithm on the first step of leaning a rule for the aunt(X, Y) relation. }
 \begin{center}
-	\includegraphics[scale=.4]{pics/hw5_9.png}
+	\includegraphics[scale=.45]{pics/hw5_9.png}
 \end{center}
+
+Here're are the literals that would be considered, for the relation $\text{aunt}(X,Y)$, on the 1st step: 
+\smallbreak
+
+$X == Y$	\\
+$X \neq Y$ \\ 
+$\text{sibling}(X,Y)$ \\ 
+$\neg \text{sibling}(X,Y)$ \\ 
+$\text{parent}(X,Y)$ \\ 
+$\neg \text{parent}(X,Y)$ \\ 
+$\text{female}(X)$ \\ 
+$\neg \text{female}(X)$ \\ 
+$\text{female}(Y)$ \\ 
+$\neg \text{female}(Y)$ \\ 
+$\text{male}(X)$ \\ 
+$\neg \text{male}(X)$ \\ 
+$\text{male}(Y)$ \\ 
+$\neg \text{male}(Y)$ \\ 
+$X == c, \text{where c is a constant}$ \\ 
+$X \neq c, \text{where c is a constant}$ \\ 
+$Y == c, \text{where c is a constant}$ \\ 
+$Y \neq c, \text{where c is a constant}$ 
+
+
+
+
+
+
+
+\iffalse
+$\text{aunt}(X,Y) \equiv X == Y$	\\
+$\text{aunt}(X,Y) \equiv X \neq Y$ \\ 
+$\text{aunt}(X,Y) \equiv \text{sibling}(X,Y)$ \\ 
+$\text{aunt}(X,Y) \equiv \neg \text{sibling}(X,Y)$ \\ 
+$\text{aunt}(X,Y) \equiv \text{parent}(X,Y)$ \\ 
+$\text{aunt}(X,Y) \equiv \neg \text{parent}(X,Y)$ \\ 
+$\text{aunt}(X,Y) \equiv \text{female}(X)$ \\ 
+$\text{aunt}(X,Y) \equiv \neg \text{female}(X)$ \\ 
+$\text{aunt}(X,Y) \equiv \text{female}(Y)$ \\ 
+$\text{aunt}(X,Y) \equiv \neg \text{female}(Y)$ \\ 
+$\text{aunt}(X,Y) \equiv \text{male}(X)$ \\ 
+$\text{aunt}(X,Y) \equiv \neg \text{male}(X)$ \\ 
+$\text{aunt}(X,Y) \equiv \text{male}(Y)$ \\ 
+$\text{aunt}(X,Y) \equiv \neg \text{male}(Y)$ \\ 
+$\text{aunt}(X,Y) \equiv X == c, \text{where c is a constant}$ \\ 
+$\text{aunt}(X,Y) \equiv X \neq c, \text{where c is a constant}$ \\ 
+$\text{aunt}(X,Y) \equiv Y == c, \text{where c is a constant}$ \\ 
+$\text{aunt}(X,Y) \equiv Y \neq c, \text{where c is a constant}$ 
+\fi 
+
+
 
 
 
@@ -304,8 +352,50 @@ When evaluating each model, a k-folds cross validation is required. So in total,
 \section*{Question10}
 \textbf{Show the FOIL\_gain calculation when sibling(Y, Z) is considered as the first literal to be added to the first rule learning by FOIL. Also show the tuples that are involved in this calculation.}
 
+Consider aunt(X, Y) <- sibling(Y, Z)
+Now we can expand all the tuples: 
 
+\begin{tabular}{ c c c c }
+Positive Tuples: & & & \\ 
+ & <o,t> & -> & <o,t,s>, <o,t,d> \\  
+ & <y,t> & -> & <y,t,s>, <y,t,o> \\   
+ & <a,s> & -> & <a,s,t>, <a,s,d> \\
+ & <b,s> & -> & <a,s,t>, <a,s,d> 
+\end{tabular}
 
+\begin{tabular}{ c c c c }
+Negative Tuples: & & & \\ 
+ & <o,d> & -> & <o,d,s>, <o,d,t> \\
+ & <y,d> & -> & <y,d,s>, <y,d,t>\\
+ & <b,m> &  & NA
+\end{tabular}
+
+\bigbreak 
+FOIL evaluates the addition of a literal L to a rule R by 
+$$
+\text{FOIL\_Gain}(L,R) 
+= t(\text{Info}(R_0) - \text{Info}(R_1)) 
+= t(\text{log}_2 \frac{p_1}{p_1 + n_1} - \text{log}_2 \frac{p_0}{p_0 + n_0})
+$$
+
+where
+
+$p_0$ = the number of positive tuples covered by $R_0$ = 4
+
+$n_0$ = the number of negative tuples covered by $R_0$ = 3
+
+$p_1$ = the number of positive tuples covered by $R_0 \land L$ = 8
+
+$n_1$ = the number of negative tuples covered by $R_0 \land L$ = 4
+
+$t$ = the number of positive of tuples of R also covered by $R_0 \land L$ = $p_1 - p_0$  = 4
+
+\bigbreak 
+Therefore, 
+$$
+\text{FOIL\_Gain}(L,R) 
+= 4(\text{log}_2 \frac{2}{3} - \text{log}_2 \frac{4}{7}) \approx .88957
+$$
 
 
 \end{document}
