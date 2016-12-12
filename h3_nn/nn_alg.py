@@ -79,18 +79,17 @@ def sigmoid(input):
     return np.divide(1.0,(np.add(1.0,np.exp(-input))))
 
 
-# def loadSimpleData(mapping_type):
-#     X = np.reshape(np.array([0, 0, 1, 0, 1, 1, 1, 0, 1, 1, 1, 1]), (4,3))
-#     if mapping_type is 'or':
-#         Y = np.array([0, 1, 1, 1])
-#     elif mapping_type is 'and':
-#         Y = np.array([0, 0, 0, 1])
-#     elif mapping_type is 'xor':
-#         Y = np.array([0, 1, 1, 0])
-#     else:
-#         raise ValueError('Unrecognizable pattern type.\n')
-#     return X, Y
-
+def loadSimpleData(mapping_type):
+     X = np.reshape(np.array([0, 0, 1, 0, 1, 1, 1, 0, 1, 1, 1, 1]), (4,3))
+     if mapping_type is 'or':
+         Y = np.array([0, 1, 1, 1])
+     elif mapping_type is 'and':
+         Y = np.array([0, 0, 0, 1])
+     elif mapping_type is 'xor':
+         Y = np.array([0, 1, 1, 0])
+     else:
+         raise ValueError('Unrecognizable pattern type.\n')
+     return X, Y
 
 def nn_predict(wts, rawInput):
     if len(wts) == 1:
