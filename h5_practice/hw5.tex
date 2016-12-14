@@ -73,11 +73,11 @@ Similarly, the unit h2 is representing an AND function over X3 and X4. Finally, 
 \textbf{Consider the concept class C in which each concept is an interval on the line of real numbers. Each training instance is represented by a single real-valued feature x, and a binary class label \boldmath$y \in \{0, 1\}$. A learned concept is represented by an interval [a, a + b] where a is real value and b is a positive real value, and the concept predicts y=1 for values of x in the interval, and y=0 otherwise. Show that C is PAC learnable.}
 \bigbreak
 
-The hypothesis space, H consists of all possible intervals in the form of [a, a + b]. The VC-dimension(H) is 4. Because when there are 4 instances: $(x_1,y_1),(x_2,y_2),(x_3,y_3),(x_4,y_4)$ with $x_1< x_2< x_3< x_4$ and $y_1 = y_3 \neq y_2 = y_4$, there is no $h \in H$ that can achieve zero training error. 
-
+The hypothesis space, H consists of all possible intervals in the form of [a, a + b]. The VC-dimension(H), or the max number of the training set can be shattered by H, is 2. Because when there are 3 instances: $(x_1,y_1),(x_2,y_2),(x_3,y_3)$ with $x_1< x_2< x_3$ and $y_1 = y_3 = 1 $and $ y_2 = 0$, there is no $h \in H$ that can achieve zero training error. 
+\bigbreak
 Because we have a continuous hypothesis space, we can use the following bound for the sample complexity: 
 $$
-m \geq \frac{1}{\epsilon} (4 \text{log}_2 \frac{2}{\delta} + 8 \text{VC-dim}(H) \text{log}_2 \frac{13}{\epsilon}) = \frac{1}{\epsilon} (4 \text{log}_2 \frac{2}{\delta} + 32 \text{log}_2 \frac{13}{\epsilon})
+m \geq \frac{1}{\epsilon} (4 \text{log}_2 \frac{2}{\delta} + 8 \text{VC-dim}(H) \text{log}_2 \frac{13}{\epsilon}) = \frac{1}{\epsilon} (4 \text{log}_2 \frac{2}{\delta} + 16 \text{log}_2 \frac{13}{\epsilon})
 $$
 
 Therefore, m grows polynomially in $\frac{1}{\epsilon}$, $\frac{1}{\delta}$. 
@@ -108,12 +108,13 @@ At time t, given the training instance $x^{(t)}$, the Halving algorithm reduces 
 
 Initiailly, $VS_0 = 
 \{
-x_1 \land x_2, x_1 \land x_3, x_2 \land x_3,
-x_1 \land \neg x_2, x_1 \land \neg x_3, x_2 \land \neg x_3,
-\neg x_1 \land x_2, \neg x_1 \land x_3, \neg x_2 \land x_3
-\}$, where element in the version space in the form of $x_i \land x_j$ represents a hypothesis that predicts positive when $x_i \land x_j$ is satisfied. 
+x_1 \lor x_2, x_1 \lor x_3, x_2 \lor x_3,
+x_1 \lor \neg x_2, x_1 \lor \neg x_3, x_2 \lor \neg x_3,
+\neg x_1 \lor x_2, \neg x_1 \lor x_3, \neg x_2 \lor x_3
+\}$
+, where element in the version space in the form of $x_i \lor x_j$ represents a hypothesis that predicts positive when $x_i \lor x_j$ is satisfied. 
 \bigbreak
-Step 1: Given the first instance $[x_1,x_2,x_3] = [T,F,F]$ with y = Positive. The majority vote of $VS_0$ is Negative, which is a mistake. The predictions of the inidividual hypothesis are listed here: 
+Step 1: Given the first instance $[x_1,x_2,x_3] = [T,F,F]$ with y = Positive. The majority vote of $VS_0$ is Positive. The predictions of the inidividual hypothesis are listed here: 
 
 \begin{center}
 $
@@ -121,15 +122,15 @@ $
 \hline
 \text{hypothesis} & \text{prediction} & \text{remove?} \\
 \hline
-x_1 \land x_2 & \text{Negative} & T \\ 
-x_1 \land x_3 & \text{Negative} & T \\ 
-x_2 \land x_3 & \text{Negative} & T \\ 
-x_1 \land \neg x_2 & \text{Postive} & F \\ 
-x_1 \land \neg x_3 & \text{Postive} & F \\ 
-x_2 \land \neg x_3 & \text{Negative} & T \\ 
-\neg x_1 \land x_2 & \text{Negative} & T \\ 
-\neg x_1 \land x_3 & \text{Negative} & T \\ 
-\neg x_2 \land x_3 & \text{Negative} & T \\ 
+x_1 \lor x_2 & \text{Postive} &  \\ 
+x_1 \lor x_3 & \text{Postive} & \\ 
+x_2 \lor x_3 & \text{Negative} & T \\ 
+x_1 \lor \neg x_2 & \text{Postive} &  \\ 
+x_1 \lor \neg x_3 & \text{Postive} &  \\ 
+x_2 \lor \neg x_3 & \text{Postive} &  \\ 
+\neg x_1 \lor x_2 & \text{Negative} & T \\ 
+\neg x_1 \lor x_3 & \text{Negative} & T \\ 
+\neg x_2 \lor x_3 & \text{Postive} &  \\ 
 \hline
 \end{array}
 $
@@ -137,26 +138,32 @@ $
 
 Update $VS_1 = 
 \{
-x_1 \land \neg x_2, x_1 \land \neg x_3
+x_1 \lor x_2, x_1 \lor x_3, 
+x_1 \lor \neg x_2, x_1 \lor \neg x_3, x_2 \lor \neg x_3,
+\neg x_2 \lor x_3
 \}$
 
 \smallbreak
-Step 2: Given the 2nd instance $[x_1,x_2,x_3] = [F,T,T]$ with y = Negative. The majority vote $VS_1$ is Negative, which is correct. The predictions of the inidividual hypothesis are listed here: 
+Step 2: Given the 2nd instance $[x_1,x_2,x_3] = [F,T,T]$ with y = Negative. The majority vote $VS_1$ is Positive. The predictions of the inidividual hypothesis are listed here: 
 \begin{center}
 $
 \begin{array}{c|c|c}
 \hline
 \text{hypothesis} & \text{prediction} & \text{remove?} \\
 \hline
-x_1 \land \neg x_2 & \text{Negative} &  F\\ 
-x_1 \land \neg x_3 & \text{Negative} &  F \\ 
+x_1 \lor x_2 & \text{Postive} & T \\ 
+x_1 \lor x_3 & \text{Postive} & T \\ 
+x_1 \lor \neg x_2 & \text{Negative} &  \\ 
+x_1 \lor \neg x_3 & \text{Negative} &  \\ 
+x_2 \lor \neg x_3 & \text{Postive} & T \\ 
+\neg x_2 \lor x_3 & \text{Postive} & T \\ 
 \hline
 \end{array}
 $
 \end{center}
-Nothing needs to be removed, so update $VS_2 = VS_1 = 
+Update $VS_2 = 
 \{
-x_1 \land \neg x_2, x_1 \land \neg x_3
+x_1 \lor \neg x_2, x_1 \lor \neg x_3
 \}$
 
 
@@ -166,12 +173,12 @@ x_1 \land \neg x_2, x_1 \land \neg x_3
 \bigbreak 
 After the 2nd step, the version space is $VS_2 = 
 \{
-x_1 \land \neg x_2, x_1 \land \neg x_3
+x_1 \lor \neg x_2, x_1 \lor \neg x_3
 \}$
 \smallbreak
-I think asking the y value of the instance $[x_1,x_2,x_3] = [T,F,T]$ or $[x_1,x_2,x_3] = [T,T,F]$ is informative (there are other instances with the same effect). Because one hypothesis will predict Postive and the other one will predict Negative. 
+I think asking the y value of the instance $[x_1,x_2,x_3] = [F,T,F]$ or $[x_1,x_2,x_3] = [F,F,T]$ is informative (there are other instances with the same effect). Because one hypothesis will predict Postive and the other one will predict Negative. 
 \bigbreak
-Take the instance $[x_1,x_2,x_3] = [T,F,T]$ for example, here are the predictions generated by $VS_2$: 
+Take the instance $[x_1,x_2,x_3] = [F,F,T]$ for example, here are the predictions generated by $VS_2$: 
 
 \begin{center}
 $
@@ -179,8 +186,8 @@ $
 \hline
 \text{hypothesis} & \text{prediction} \\
 \hline
-x_1 \land \neg x_2 & \text{Positive} \\ 
-x_1 \land \neg x_3 & \text{Negative} \\ 
+x_1 \lor \neg x_2 & \text{Positive}  \\ 
+x_1 \lor \neg x_3 & \text{Negative}  \\ 
 \hline
 \end{array}
 $
